@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>النظام المالي المتكامل (IFRS) | Financial System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f8fafc; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .glass-card { background: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); border: 1px solid #f1f5f9; }
+        .ifrs-table th { background-color: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em; border-bottom: 2px solid #e2e8f0; }
+        .ifrs-table td { border-bottom: 1px solid #f1f5f9; }
+        .ifrs-table tr:hover td { background-color: #f8fafc; }
+        .negative-val { color: #ef4444; direction: ltr; display: inline-block; }
+        /* Custom Modal Backdrop Styling */
+        .modal-backdrop { background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-slate-800">
+
+    <!-- Sidebar -->
+    <aside class="w-72 bg-slate-900 text-white flex flex-col shadow-2xl z-20 transition-all duration-300">
+        <div class="p-6 flex items-center gap-4 border-b border-slate-800 bg-slate-950">
+            <div class="bg-blue-600 p-2 rounded-lg"><i class="fa-solid fa-building-columns text-xl text-white"></i></div>
+            <div>
+                <h1 class="text-lg font-black tracking-wide leading-tight">نظام الإدارة المالية</h1>
+                <p class="text-xs text-blue-400 font-semibold mt-1">متوافق مع معايير IFRS</p>
+            </div>
+        </div>
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <button onclick="switchTab('input-tab')" id="nav-input" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-600 text-white font-bold transition-all shadow-md">
+                <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> ميزان المراجعة والسنوات
+            </button>
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider pt-4 pb-2 px-4">التقارير المالية</div>
+            <button onclick="switchTab('statements-tab')" id="nav-statements" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 transition-all">
+                <i class="fa-solid fa-file-lines w-5 text-center"></i> الدخل والمركز المالي
+            </button>
+            <button onclick="switchTab('cashflow-tab')" id="nav-cashflow" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 transition-all">
+                <i class="fa-solid fa-money-bill-transfer w-5 text-center"></i> التدفقات النقدية
+            </button>
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider pt-4 pb-2 px-4">التحليل والمؤشرات</div>
+            <button onclick="switchTab('analysis-tab')" id="nav-analysis" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 transition-all">
+                <i class="fa-solid fa-magnifying-glass-chart w-5 text-center"></i> التحليل المالي الشامل
+            </button>
+            <button onclick="switchTab('dashboard-tab')" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 transition-all">
+                <i class="fa-solid fa-chart-pie w-5 text-center"></i> لوحة المؤشرات (Dashboard)
+            </button>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto relative bg-slate-50">
+        
+        <!-- Alerts Area -->
+        <div id="alert-container" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-lg transition-all"></div>
+
+        <div class="p-8 max-w-7xl mx-auto">
+            
+            <!-- 1. Input Tab (Trial Balance & Years Management) -->
+            <section id="input-tab" class="tab-content active">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                    <div>
+                        <h2 class="text-3xl font-black text-slate-900">إدخال ميزان المراجعة وإدارة السنوات</h2>
+                        <p class="text-slate-500 mt-2 font-medium">أضف السنوات المالية، عدّل الأرصدة بدقة، وتحكم بكامل فترات العرض والمقارنة.</p>
+                    </div>
+                    <button onclick="generateReports()" class="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 transform transition hover:-translate-y-0.5 flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> معالجة وتحديث كافة التقارير
+                    </button>
+                </div>
+
+                <!-- Financial Years Control Panel with new Reset Balance button -->
+                <div class="glass-card p-6 mb-6 bg-slate-50/50 border-2 border-slate-100">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-blue-600"></i> إدارة السنوات والفترات المالية
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-2">السنة المالية النشطة للإدخال والتعديل:</label>
+                            <select id="period-selector" class="w-full border-2 border-slate-200 rounded-xl px-4 py-2.5 bg-white font-bold text-slate-700 shadow-sm focus:outline-none focus:border-blue-500 transition-colors" onchange="changeActivePeriod()">
+                                <!-- Injected dynamically -->
+                            </select>
+                        </div>
+                        <div class="flex flex-wrap gap-2 md:col-span-2">
+                            <button onclick="openAddYearModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-md flex items-center gap-2">
+                                <i class="fa-solid fa-circle-plus"></i> إضافة سنة مالية جديدة
+                            </button>
+                            <button onclick="openRenameYearModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-md flex items-center gap-2">
+                                <i class="fa-solid fa-pen-to-square"></i> إعادة تسمية السنة
+                            </button>
+                            <button onclick="openResetConfirmModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-md flex items-center gap-2">
+                                <i class="fa-solid fa-rotate-left"></i> تصفير أرصدة الميزان
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trial Balance Table -->
+                <div class="glass-card overflow-hidden">
+                    <div class="p-4 bg-slate-100/50 border-b border-slate-200 flex justify-between items-center">
+                        <span class="font-bold text-slate-700">ميزان المراجعة النشط لـ: <span id="active-tb-label" class="text-blue-600 underline font-black">2026</span></span>
+                        <span class="text-xs font-semibold text-slate-500">معد وفقاً للهيكل المعياري المحاسبي الدولي (IFRS)</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse">
+                            <thead class="bg-slate-50 border-b-2 border-slate-200">
+                                <tr>
+                                    <th class="p-4 font-bold text-slate-600 w-24">كود</th>
+                                    <th class="p-4 font-bold text-slate-600">اسم الحساب (Account Name)</th>
+                                    <th class="p-4 font-bold text-slate-600 w-64">التصنيف المحاسبي (IFRS Mapping)</th>
+                                    <th class="p-4 font-bold text-slate-600 w-32">مدين (Debit)</th>
+                                    <th class="p-4 font-bold text-slate-600 w-32">دائن (Credit)</th>
+                                    <th class="p-4 font-bold text-slate-600 text-center w-16"><i class="fa-solid fa-gear"></i></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tb-body" class="divide-y divide-slate-100">
+                                <!-- Rows injected via JS -->
+                            </tbody>
+                            <tfoot class="bg-slate-50 border-t-2 border-slate-200">
+                                <tr>
+                                    <td colspan="3" class="p-4 text-left font-black text-slate-700">إجمالي ميزان المراجعة:</td>
+                                    <td id="total-debit" class="p-4 font-black text-blue-700 text-lg">0</td>
+                                    <td id="total-credit" class="p-4 font-black text-blue-700 text-lg">0</td>
+                                    <td></td>
+                                </tr>
+                                <tr id="balance-warning" class="hidden">
+                                    <td colspan="6" class="p-4 text-center text-red-700 bg-red-50/80 font-bold border-t border-red-100">
+                                        <i class="fa-solid fa-triangle-exclamation mr-2"></i> تحذير: ميزان المراجعة غير متزن! يوجد فرق قدره: <span id="balance-diff" class="mx-1 underline">0</span> يرجى المراجعة والاتزان للمتابعة.
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="p-4 bg-white flex justify-between items-center border-t border-slate-100">
+                        <button onclick="addRow()" class="text-blue-600 hover:text-blue-800 font-bold flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors">
+                            <i class="fa-solid fa-circle-plus"></i> إضافة حساب فرعي جديد
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Financial Statements Tab -->
+            <section id="statements-tab" class="tab-content">
+                <div class="mb-8 border-b-2 border-slate-200 pb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                    <div>
+                        <h2 class="text-3xl font-black text-slate-900">القوائم المالية (Financial Statements)</h2>
+                        <p class="text-slate-500 mt-2">معروضة وفقاً للمعايير الدولية (IFRS) مع إمكانية مقارنة أي سنتين بحرية مطلقة.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3 bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-600">سنة التقرير:</span>
+                            <select id="statements-report-year" class="border rounded-lg px-3 py-1.5 font-bold text-slate-700 focus:border-blue-500 outline-none" onchange="generateReports()"></select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-600">سنة المقارنة:</span>
+                            <select id="statements-compare-year" class="border rounded-lg px-3 py-1.5 font-bold text-slate-700 focus:border-blue-500 outline-none" onchange="generateReports()"></select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    <!-- Income Statement -->
+                    <div class="glass-card p-6 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                        <div class="text-center mb-6">
+                            <h3 class="text-2xl font-black text-slate-800">قائمة الدخل الشامل</h3>
+                            <p class="text-slate-500 text-sm font-semibold">Statement of Comprehensive Income</p>
+                        </div>
+                        <table class="w-full text-right ifrs-table">
+                            <thead>
+                                <tr>
+                                    <th class="py-3 px-2">البيان</th>
+                                    <th class="py-3 px-2 text-left" id="is-header-current">الحالية</th>
+                                    <th class="py-3 px-2 text-left text-slate-400" id="is-header-compare">المقارنة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="is-body"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Balance Sheet -->
+                    <div class="glass-card p-6 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                        <div class="text-center mb-6">
+                            <h3 class="text-2xl font-black text-slate-800">قائمة المركز المالي</h3>
+                            <p class="text-slate-500 text-sm font-semibold">Statement of Financial Position</p>
+                        </div>
+                        <table class="w-full text-right ifrs-table">
+                            <thead>
+                                <tr>
+                                    <th class="py-3 px-2">البيان</th>
+                                    <th class="py-3 px-2 text-left" id="bs-header-current">الحالية</th>
+                                    <th class="py-3 px-2 text-left text-slate-400" id="bs-header-compare">المقارنة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bs-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Cash Flow Tab -->
+            <section id="cashflow-tab" class="tab-content">
+                <div class="mb-8 border-b-2 border-slate-200 pb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                    <div>
+                        <h2 class="text-3xl font-black text-slate-900">قائمة التدفقات النقدية</h2>
+                        <p class="text-slate-500 mt-2">معدة بالطريقة غير المباشرة (Indirect Method) بمطابقة تامة مع معيار المحاسبة الدولي IAS 7.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3 bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-600">عرض التدفقات لـ:</span>
+                            <select id="cf-report-year" class="border rounded-lg px-3 py-1.5 font-bold text-slate-700 focus:border-blue-500 outline-none" onchange="generateReports()"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-8 max-w-4xl mx-auto relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                    <table class="w-full text-right ifrs-table">
+                        <thead>
+                            <tr>
+                                <th class="py-3 px-2 text-lg">البيان (Statement of Cash Flows)</th>
+                                <th class="py-3 px-2 text-left text-lg" id="cf-header-current">الفترة الحالية</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cf-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 4. Financial Analysis Tab -->
+            <section id="analysis-tab" class="tab-content">
+                <div class="mb-8 border-b-2 border-slate-200 pb-4 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                    <div>
+                        <h2 class="text-3xl font-black text-slate-900">التحليل المالي والنسب المقارنة</h2>
+                        <p class="text-slate-500 mt-2">قياس تفاعلي فوري لنسب السيولة، الربحية، الهيكل والرفع المالي لسنتين محددتين.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3 bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-600">سنة التحليل:</span>
+                            <select id="analysis-report-year" class="border rounded-lg px-3 py-1.5 font-bold text-slate-700 focus:border-blue-500 outline-none" onchange="generateReports()"></select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-600">سنة المقارنة:</span>
+                            <select id="analysis-compare-year" class="border rounded-lg px-3 py-1.5 font-bold text-slate-700 focus:border-blue-500 outline-none" onchange="generateReports()"></select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="comprehensive-ratios">
+                    <!-- Injected via JS -->
+                </div>
+
+                <div class="mt-8 glass-card p-8 border-r-4 border-indigo-500 bg-indigo-50/30">
+                    <h3 class="text-xl font-black text-indigo-900 mb-4 flex items-center gap-2"><i class="fa-solid fa-square-poll-vertical"></i> التقرير التحليلي التفسيري المتقدم</h3>
+                    <div id="ai-analysis-text" class="text-slate-700 leading-relaxed space-y-3 font-medium text-lg">
+                        يرجى تزويد البيانات والضغط على معالجة لإصدار التحليل...
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. Dashboard Tab -->
+            <section id="dashboard-tab" class="tab-content">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 border-b-2 border-slate-200 pb-4 gap-4">
+                    <div>
+                        <h2 class="text-3xl font-black text-slate-900">لوحة المؤشرات التنفيذية (KPIs)</h2>
+                        <p class="text-slate-500 mt-2"></p>
+                    </div>
+                    <div class="flex flex-wrap gap-3 items-center">
+                        <div class="flex items-center gap-2 bg-white p-2 rounded-xl border shadow-sm">
+                            <span class="text-xs font-bold text-slate-600">السنة الفعالة:</span>
+                            <select id="dashboard-report-year" class="border-none rounded px-3 py-1.5 font-bold text-slate-700 focus:outline-none" onchange="generateReports()"></select>
+                        </div>
+                        <div class="flex items-center gap-2 bg-white p-2 rounded-xl border shadow-sm">
+                            <span class="text-xs font-bold text-slate-600">المقارنة بـ:</span>
+                            <select id="dashboard-compare-year" class="border-none rounded px-3 py-1.5 font-bold text-slate-700 focus:outline-none" onchange="generateReports()"></select>
+                        </div>
+                        
+                    </div>
+                </div>
+                
+                <!-- KPIs Container -->
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8" id="kpi-container">
+                    <!-- Injected via JS -->
+                </div>
+
+                <!-- Charts Area -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="glass-card p-6">
+                        <h3 class="text-lg font-black text-slate-800 mb-6 text-center border-b pb-2">تطور الأرباح والهوامش بالمقارنة</h3>
+                        <canvas id="profitabilityChart"></canvas>
+                    </div>
+                    <div class="glass-card p-6">
+                        <h3 class="text-lg font-black text-slate-800 mb-6 text-center border-b pb-2">هيكل التدفق النقدي للفترة الحالية</h3>
+                        <canvas id="cashFlowChart"></canvas>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass-card p-6 flex flex-col items-center">
+                        <h3 class="text-lg font-black text-slate-800 mb-6 text-center border-b pb-2 w-full">توزيع هيكل الأصول</h3>
+                        <div class="w-full max-w-sm"><canvas id="assetsChart"></canvas></div>
+                    </div>
+                    <div class="glass-card p-6 flex flex-col items-center">
+                        <h3 class="text-lg font-black text-slate-800 mb-6 text-center border-b pb-2 w-full">هيكل الخصوم وحقوق الملكية</h3>
+                        <div class="w-full max-w-sm"><canvas id="liabilitiesChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Custom Modals System -->
+    <!-- 1. Add Year Modal -->
+    <div id="add-year-modal" class="fixed inset-0 z-50 items-center justify-center modal-backdrop hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl mx-4 transform transition-all">
+            <h3 class="text-xl font-black text-slate-900 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-circle-plus text-emerald-600"></i> إضافة سنة مالية جديدة
+            </h3>
+            <p class="text-slate-500 text-sm mb-4 leading-relaxed">
+                أدخل اسم السنة المالية الجديدة بالأسفل. سيقوم النظام بنسخ دليل الحسابات بنجاح وإعادة تصفير الأرصدة للبدء فوراً.
+            </p>
+            <input type="text" id="new-year-input" placeholder="مثال: 2027 أو 2024" class="w-full border-2 border-slate-200 p-3 rounded-xl mb-6 font-bold text-center outline-none focus:border-emerald-500 transition-colors">
+            <div class="flex gap-3">
+                <button onclick="submitAddYear()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-bold transition-all shadow-md">إضافة وتفعيل</button>
+                <button onclick="closeModal('add-year-modal')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-xl font-bold transition-all">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Rename Year Modal -->
+    <div id="rename-year-modal" class="fixed inset-0 z-50 items-center justify-center modal-backdrop hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl mx-4 transform transition-all">
+            <h3 class="text-xl font-black text-slate-900 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square text-amber-500"></i> تعديل مسمى السنة المالية
+            </h3>
+            <p class="text-slate-500 text-sm mb-4 leading-relaxed">
+                قم بتغيير مسمى الفترة الحالية النشطة. سيقوم النظام بتحديث كافة المخرجات والتقارير المالية بهذا الاسم الجديد فوراً.
+            </p>
+            <input type="text" id="rename-year-input" placeholder="مثال: 2026 معدل" class="w-full border-2 border-slate-200 p-3 rounded-xl mb-6 font-bold text-center outline-none focus:border-amber-500 transition-colors">
+            <div class="flex gap-3">
+                <button onclick="submitRenameYear()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-xl font-bold transition-all shadow-md">تأكيد التعديل</button>
+                <button onclick="closeModal('rename-year-modal')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-xl font-bold transition-all">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Reset Balance Confirm Modal -->
+    <div id="reset-confirm-modal" class="fixed inset-0 z-50 items-center justify-center modal-backdrop hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl mx-4 transform transition-all">
+            <h3 class="text-xl font-black text-amber-600 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i> هل أنت متأكد من تصفير الأرصدة؟
+            </h3>
+            <p class="text-slate-500 text-sm mb-6 leading-relaxed">
+                إن قيامك بتصفير أرصدة ميزان المراجعة للسنة المالية <strong id="reset-target-label" class="text-slate-800 underline">2026</strong> سيقوم بمسح كافة الأرقام المدخلة في خانات (مدين ودائن) لجميع الحسابات نهائياً وإعادتها لقيمة صفر. لا يمكن التراجع عن هذا الإجراء.
+            </p>
+            <div class="flex gap-3">
+                <button onclick="submitResetBalance()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl font-bold transition-all shadow-md">نعم، تصفير الآن</button>
+                <button onclick="closeModal('reset-confirm-modal')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-xl font-bold transition-all">إلغاء وتراجع</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Core Account Structures (IFRS mapping) ---
+        const accountTypes = {
+            '-- الأصول (Assets) --': {
+                'cash': 'النقد وما في حكمه',
+                'ar': 'الذمم المدينة التجارية',
+                'inventory': 'المخزون',
+                'other_ca': 'أصول متداولة أخرى',
+                'ppe': 'الممتلكات والآلات والمعدات',
+                'intangible': 'أصول غير ملموسة',
+                'other_nca': 'أصول غير متداولة أخرى'
+            },
+            '-- الالتزامات (Liabilities) --': {
+                'ap': 'الذمم الدائنة التجارية',
+                'st_debt': 'قروض وتسهيلات قصيرة الأجل',
+                'other_cl': 'التزامات متداولة أخرى',
+                'lt_debt': 'قروض طويلة الأجل',
+                'other_ncl': 'التزامات غير متداولة أخرى'
+            },
+            '-- حقوق الملكية (Equity) --': {
+                'capital': 'رأس المال',
+                'retained_earnings': 'أرباح مبقاة',
+                'dividends': 'توزيعات أرباح (مدين)'
+            },
+            '-- قائمة الدخل (P&L) --': {
+                'revenue': 'إيرادات المبيعات / التشغيل',
+                'cogs': 'تكلفة المبيعات',
+                'other_inc': 'إيرادات أخرى',
+                'sg_a': 'مصاريف بيعية وإدارية عمومية',
+                'depreciation': 'إهلاك واستهلاك',
+                'finance_cost': 'تكاليف التمويل (فوائد)',
+                'tax': 'مصروف الزكاة والضريبة'
+            }
+        };
+
+        const flatAccountTypes = {};
+        for(let group in accountTypes) {
+            for(let key in accountTypes[group]) {
+                flatAccountTypes[key] = accountTypes[group][key];
+            }
+        }
+
+        // Standard account template to clone when creating new periods
+        const defaultAccountTemplate = [
+            { id: '101', name: 'بنك الراجحي + الصندوق', type: 'cash', debit: 0, credit: 0 },
+            { id: '102', name: 'العملاء (ذمم مدينة)', type: 'ar', debit: 0, credit: 0 },
+            { id: '103', name: 'مخزون البضاعة', type: 'inventory', debit: 0, credit: 0 },
+            { id: '104', name: 'مصاريف مدفوعة مقدماً', type: 'other_ca', debit: 0, credit: 0 },
+            { id: '111', name: 'الآلات والمعدات (الصافي)', type: 'ppe', debit: 0, credit: 0 },
+            { id: '112', name: 'برمجيات وحقوق ملكية', type: 'intangible', debit: 0, credit: 0 },
+            { id: '201', name: 'الموردون', type: 'ap', debit: 0, credit: 0 },
+            { id: '202', name: 'تسهيلات بنكية قصيرة', type: 'st_debt', debit: 0, credit: 0 },
+            { id: '203', name: 'مستحقات أخرى', type: 'other_cl', debit: 0, credit: 0 },
+            { id: '211', name: 'قرض بنكي طويل الأجل', type: 'lt_debt', debit: 0, credit: 0 },
+            { id: '301', name: 'رأس المال المدفوع', type: 'capital', debit: 0, credit: 0 },
+            { id: '302', name: 'الأرباح المبقاة (أول المدة)', type: 'retained_earnings', debit: 0, credit: 0 },
+            { id: '303', name: 'توزيعات أرباح', type: 'dividends', debit: 0, credit: 0 },
+            { id: '401', name: 'إيرادات المبيعات', type: 'revenue', debit: 0, credit: 0 },
+            { id: '402', name: 'إيرادات متنوعة', type: 'other_inc', debit: 0, credit: 0 },
+            { id: '501', name: 'تكلفة البضاعة المباعة', type: 'cogs', debit: 0, credit: 0 },
+            { id: '502', name: 'رواتب وإيجارات وتسويق', type: 'sg_a', debit: 0, credit: 0 },
+            { id: '503', name: 'مجمع الإهلاك (مصروف)', type: 'depreciation', debit: 0, credit: 0 },
+            { id: '504', name: 'فوائد بنكية', type: 'finance_cost', debit: 0, credit: 0 },
+            { id: '505', name: 'مخصص الزكاة', type: 'tax', debit: 0, credit: 0 }
+        ];
+
+        // Initializing Database state with comparative data
+        const db = {
+            "2026": [
+                { id: '101', name: 'البنوك + الصندوق', type: 'cash', debit: 0, credit: 0 },
+                { id: '102', name: 'العملاء (ذمم مدينة)', type: 'ar', debit: 0, credit: 0 },
+                { id: '103', name: 'مخزون البضاعة', type: 'inventory', debit: 0, credit: 0 },
+                { id: '104', name: 'مصاريف مدفوعة مقدماً', type: 'other_ca', debit: 0, credit: 0 },
+                { id: '111', name: 'الآلات والمعدات (الصافي)', type: 'ppe', debit: 0, credit: 0 },
+                { id: '112', name: 'برمجيات', type: 'intangible', debit: 0, credit: 0 },
+                { id: '201', name: 'الموردون', type: 'ap', debit: 0, credit: 0 },
+                { id: '202', name: 'تسهيلات بنكية قصيرة', type: 'st_debt', debit: 0, credit: 0 },
+                { id: '203', name: 'مستحقات أخرى', type: 'other_cl', debit: 0, credit: 0 },
+                { id: '211', name: 'قرض بنكي طويل الأجل', type: 'lt_debt', debit: 0, credit: 0 },
+                { id: '301', name: 'رأس المال المدفوع', type: 'capital', debit: 0, credit: 0 },
+                { id: '302', name: 'الأرباح المبقاة (أول المدة)', type: 'retained_earnings', debit: 0, credit: 0 },
+                { id: '303', name: 'توزيعات أرباح', type: 'dividends', debit: 0, credit: 0 },
+                { id: '401', name: 'إيرادات المبيعات', type: 'revenue', debit: 0, credit: 0 },
+                { id: '402', name: 'إيرادات متنوعة', type: 'other_inc', debit: 0, credit: 0 },
+                { id: '501', name: 'تكلفة البضاعة المباعة', type: 'cogs', debit: 0, credit: 0 },
+                { id: '502', name: 'رواتب وإيجارات وتسويق', type: 'sg_a', debit: 0, credit: 0 },
+                { id: '503', name: 'مجمع الإهلاك (مصروف)', type: 'depreciation', debit: 0, credit: 0 },
+                { id: '504', name: 'فوائد بنكية', type: 'finance_cost', debit: 0, credit: 0 },
+                { id: '505', name: 'مخصص الزكاة', type: 'tax', debit: 0, credit: 0 }
+            ],
+            "2025": [
+                { id: '101', name: 'البنوك + الصندوق', type: 'cash', debit: 0, credit: 0 },
+                { id: '102', name: 'العملاء (ذمم مدينة)', type: 'ar', debit: 0, credit: 0 },
+                { id: '103', name: 'مخزون البضاعة', type: 'inventory', debit: 0, credit: 0 },
+                { id: '104', name: 'مصاريف مدفوعة مقدماً', type: 'other_ca', debit: 0, credit: 0 },
+                { id: '111', name: 'الآلات والمعدات (الصافي)', type: 'ppe', debit: 0, credit: 0 },
+                { id: '112', name: 'برمجيات', type: 'intangible', debit: 0, credit: 0 },
+                { id: '201', name: 'الموردون', type: 'ap', debit: 0, credit: 0 },
+                { id: '202', name: 'تسهيلات بنكية قصيرة', type: 'st_debt', debit: 0, credit: 0 },
+                { id: '203', name: 'مستحقات أخرى', type: 'other_cl', debit: 0, credit: 0 },
+                { id: '211', name: 'قرض بنكي طويل الأجل', type: 'lt_debt', debit: 0, credit: 0 },
+                { id: '301', name: 'رأس المال المدفوع', type: 'capital', debit: 0, credit: 0 },
+                { id: '302', name: 'الأرباح المبقاة (أول المدة)', type: 'retained_earnings', debit: 0, credit: 0 },
+                { id: '303', name: 'توزيعات أرباح', type: 'dividends', debit: 0, credit: 0 },
+                { id: '401', name: 'إيرادات المبيعات', type: 'revenue', debit: 0, credit: 0 },
+                { id: '402', name: 'إيرادات متنوعة', type: 'other_inc', debit: 0, credit: 0 },
+                { id: '501', name: 'تكلفة البضاعة المباعة', type: 'cogs', debit: 0, credit: 0 },
+                { id: '502', name: 'رواتب وإيجارات وتسويق', type: 'sg_a', debit: 0, credit: 0 },
+                { id: '503', name: 'مجمع الإهلاك (مصروف)', type: 'depreciation', debit: 0, credit: 0 },
+                { id: '504', name: 'فوائد بنكية', type: 'finance_cost', debit: 0, credit: 0 },
+                { id: '505', name: 'مخصص الزكاة', type: 'tax', debit: 0, credit: 0 }
+            ]
+        };
+
+        // Current application state configuration
+        let state = {
+            activeInputPeriod: "2026",
+            statementsReportPeriod: "2026",
+            statementsComparePeriod: "2025",
+            cfReportPeriod: "2026",
+            analysisReportPeriod: "2026",
+            analysisComparePeriod: "2025",
+            dashboardReportPeriod: "2026",
+            dashboardComparePeriod: "2025"
+        };
+
+        // Charts configuration state
+        let charts = {};
+
+        // --- Formatting utilities and UI helpers ---
+        const fmtNum = (num) => {
+            if (num < 0) return `<span class="negative-val">(${new Intl.NumberFormat('en-US').format(Math.abs(num))})</span>`;
+            return new Intl.NumberFormat('en-US').format(num);
+        };
+        const parseNum = (str) => parseFloat(String(str).replace(/,/g, '').replace(/[()]/g, '')) || 0;
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            document.querySelectorAll('nav button').forEach(el => {
+                el.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+                el.classList.add('hover:bg-slate-800', 'text-slate-300');
+            });
+            let btnId = tabId.replace('-tab', '');
+            let activeBtn = document.getElementById('nav-' + btnId);
+            activeBtn.classList.remove('hover:bg-slate-800', 'text-slate-300');
+            activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+        }
+
+        function showAlert(msg, type = 'success') {
+            const container = document.getElementById('alert-container');
+            const color = type === 'success' ? 'bg-emerald-600' : 'bg-red-600';
+            const icon = type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
+            
+            container.innerHTML = `
+                <div class="${color} text-white px-6 py-4 rounded-xl shadow-2xl flex items-center justify-between mb-4 border border-white/20">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid ${icon} text-2xl"></i>
+                        <span class="font-bold text-lg">${msg}</span>
+                    </div>
+                </div>
+            `;
+            setTimeout(() => { container.innerHTML = ''; }, 4000);
+        }
+
+        // Custom modal controls
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // --- Setting up Year and Dropdown populate engines ---
+        function populateAllYearDropdowns() {
+            const years = Object.keys(db).sort((a,b) => b.localeCompare(a));
+            
+            const selectors = [
+                { id: 'period-selector', stateKey: 'activeInputPeriod' },
+                { id: 'statements-report-year', stateKey: 'statementsReportPeriod' },
+                { id: 'statements-compare-year', stateKey: 'statementsComparePeriod' },
+                { id: 'cf-report-year', stateKey: 'cfReportPeriod' },
+                { id: 'analysis-report-year', stateKey: 'analysisReportPeriod' },
+                { id: 'analysis-compare-year', stateKey: 'analysisComparePeriod' },
+                { id: 'dashboard-report-year', stateKey: 'dashboardReportPeriod' },
+                { id: 'dashboard-compare-year', stateKey: 'dashboardComparePeriod' }
+            ];
+
+            selectors.forEach(sel => {
+                const el = document.getElementById(sel.id);
+                if (!el) return;
+                
+                let valToSet = state[sel.stateKey];
+                if (!years.includes(valToSet)) {
+                    valToSet = years[0] || "";
+                    state[sel.stateKey] = valToSet;
+                }
+
+                el.innerHTML = "";
+                years.forEach(yr => {
+                    const opt = document.createElement('option');
+                    opt.value = yr;
+                    opt.textContent = `السنة المالية (${yr})`;
+                    if (yr === valToSet) opt.selected = true;
+                    el.appendChild(opt);
+                });
+            });
+
+            // Update label of active TB
+            document.getElementById('active-tb-label').textContent = state.activeInputPeriod;
+        }
+
+        // --- Action Handlers for Custom Year Management ---
+        function changeActivePeriod() {
+            state.activeInputPeriod = document.getElementById('period-selector').value;
+            document.getElementById('active-tb-label').textContent = state.activeInputPeriod;
+            renderTable();
+        }
+
+        function openAddYearModal() {
+            document.getElementById('new-year-input').value = "";
+            openModal('add-year-modal');
+        }
+
+        function submitAddYear() {
+            const val = document.getElementById('new-year-input').value.trim();
+            if(!val) {
+                showAlert('الرجاء إدخال اسم السنة المالية.', 'error');
+                return;
+            }
+            if(db[val]) {
+                showAlert('هذه السنة المالية مسجلة مسبقاً في النظام!', 'error');
+                return;
+            }
+
+            // Copy default template structure
+            db[val] = JSON.parse(JSON.stringify(defaultAccountTemplate));
+            state.activeInputPeriod = val;
+            
+            closeModal('add-year-modal');
+            showAlert(`تم إضافة وتفعيل السنة المالية (${val}) بنجاح!`, 'success');
+            
+            populateAllYearDropdowns();
+            renderTable();
+        }
+
+        // --- STREAMING_CHUNK: Implementing the new trial balance clear actions ---
+        function openResetConfirmModal() {
+            document.getElementById('reset-target-label').textContent = state.activeInputPeriod;
+            openModal('reset-confirm-modal');
+        }
+
+        function submitResetBalance() {
+            const target = state.activeInputPeriod;
+            if (db[target]) {
+                db[target].forEach(row => {
+                    row.debit = 0;
+                    row.credit = 0;
+                });
+                closeModal('reset-confirm-modal');
+                showAlert(`تم تصفير كافة أرصدة ميزان المراجعة للسنة (${target}) بنجاح!`, 'success');
+                renderTable();
+            }
+        }
+
+        // --- Designing Trial Balance rendering controls ---
+        function renderTable() {
+            const tbody = document.getElementById('tb-body');
+            tbody.innerHTML = '';
+
+            let selectHTML = '';
+            for(let group in accountTypes) {
+                selectHTML += `<optgroup label="${group}">`;
+                for(let key in accountTypes[group]) {
+                    selectHTML += `<option value="${key}">${accountTypes[group][key]}</option>`;
+                }
+                selectHTML += `</optgroup>`;
+            }
+
+            const currentRows = db[state.activeInputPeriod] || [];
+
+            currentRows.forEach((row, index) => {
+                let currentSelect = selectHTML.replace(`value="${row.type}"`, `value="${row.type}" selected`);
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-2"><input type="text" class="w-full p-2 border border-slate-200 rounded-lg text-center font-bold focus:border-blue-500 outline-none" value="${row.id}" onchange="updateRow(${index}, 'id', this.value)"></td>
+                    <td class="p-2"><input type="text" class="w-full p-2 border border-slate-200 rounded-lg font-bold focus:border-blue-500 outline-none" value="${row.name}" onchange="updateRow(${index}, 'name', this.value)"></td>
+                    <td class="p-2"><select class="w-full p-2 border border-slate-200 rounded-lg font-bold text-sm focus:border-blue-500 outline-none" onchange="updateRow(${index}, 'type', this.value)">${currentSelect}</select></td>
+                    <td class="p-2"><input type="text" class="w-full p-2 border border-slate-200 rounded-lg text-left font-bold focus:border-blue-500 outline-none" value="${new Intl.NumberFormat('en-US').format(row.debit)}" onchange="updateRow(${index}, 'debit', this.value)"></td>
+                    <td class="p-2"><input type="text" class="w-full p-2 border border-slate-200 rounded-lg text-left font-bold focus:border-blue-500 outline-none" value="${new Intl.NumberFormat('en-US').format(row.credit)}" onchange="updateRow(${index}, 'credit', this.value)"></td>
+                    <td class="p-2 text-center">
+                        <button onclick="deleteRow(${index})" class="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            calculateTotals();
+        }
+
+        function updateRow(index, field, value) {
+            if (field === 'debit' || field === 'credit') value = parseNum(value);
+            db[state.activeInputPeriod][index][field] = value;
+            if (field === 'debit' || field === 'credit') renderTable();
+        }
+
+        // Avoid standard window alert blockages in nested sandboxed layouts
+        window.alert = function(msg) { showAlert(msg, 'error'); };
+
+        function addRow() {
+            db[state.activeInputPeriod].push({ id: '', name: '', type: 'sg_a', debit: 0, credit: 0 });
+            renderTable();
+        }
+
+        function deleteRow(index) {
+            db[state.activeInputPeriod].splice(index, 1);
+            renderTable();
+        }
+
+        function calculateTotals() {
+            let totalDebit = 0, totalCredit = 0;
+            const currentRows = db[state.activeInputPeriod] || [];
+            currentRows.forEach(row => {
+                totalDebit += row.debit;
+                totalCredit += row.credit;
+            });
+            document.getElementById('total-debit').innerHTML = fmtNum(totalDebit);
+            document.getElementById('total-credit').innerHTML = fmtNum(totalCredit);
+            
+            const warning = document.getElementById('balance-warning');
+            if (Math.abs(totalDebit - totalCredit) > 1) { // 1 tolerance for rounding
+                warning.classList.remove('hidden');
+                document.getElementById('balance-diff').textContent = new Intl.NumberFormat('en-US').format(Math.abs(totalDebit - totalCredit));
+            } else {
+                warning.classList.add('hidden');
+            }
+        }
+
+        function openRenameYearModal() {
+            document.getElementById('rename-year-input').value = state.activeInputPeriod;
+            openModal('rename-year-modal');
+        }
+
+        function submitRenameYear() {
+            const oldVal = state.activeInputPeriod;
+            const newVal = document.getElementById('rename-year-input').value.trim();
+            if(!newVal) {
+                showAlert('الرجاء إدخال اسم صحيح.', 'error');
+                return;
+            }
+            if(newVal === oldVal) {
+                closeModal('rename-year-modal');
+                return;
+            }
+            if(db[newVal]) {
+                showAlert('الاسم الجديد مسجل بالفعل لسنة أخرى!', 'error');
+                return;
+            }
+
+            db[newVal] = db[oldVal];
+            delete db[oldVal];
+
+            for(let key in state) {
+                if(state[key] === oldVal) state[key] = newVal;
+            }
+
+            closeModal('rename-year-modal');
+            showAlert(`تم إعادة تسمية الفترة بنجاح إلى (${newVal})`, 'success');
+
+            populateAllYearDropdowns();
+            renderTable();
+        }
+
+        // --- Designing P&L, Balance Sheet, and Indirect Cash Flow calculation core ---
+        function calculatePeriod(dataArray) {
+            let vals = {};
+            for(let key in flatAccountTypes) vals[key] = 0;
+
+            if(!dataArray) return vals;
+
+            dataArray.forEach(row => {
+                if(['cash','ar','inventory','other_ca','ppe','intangible','other_nca', 'cogs', 'sg_a', 'depreciation', 'finance_cost', 'tax', 'dividends'].includes(row.type)) {
+                    vals[row.type] += (row.debit - row.credit);
+                } 
+                else {
+                    vals[row.type] += (row.credit - row.debit);
+                }
+            });
+
+            let res = { ...vals };
+            
+            res.gross_profit = res.revenue - res.cogs;
+            res.ebitda = res.gross_profit + res.other_inc - res.sg_a;
+            res.ebit = res.ebitda - res.depreciation;
+            res.ebt = res.ebit - res.finance_cost;
+            res.net_income = res.ebt - res.tax;
+
+            res.total_ca = res.cash + res.ar + res.inventory + res.other_ca;
+            res.total_nca = res.ppe + res.intangible + res.other_nca;
+            res.total_assets = res.total_ca + res.total_nca;
+
+            res.total_cl = res.ap + res.st_debt + res.other_cl;
+            res.total_ncl = res.lt_debt + res.other_ncl;
+            res.total_liabilities = res.total_cl + res.total_ncl;
+
+            res.re_ending = res.retained_earnings + res.net_income - res.dividends;
+            res.total_equity = res.capital + res.re_ending;
+            
+            res.total_l_and_e = res.total_liabilities + res.total_equity;
+
+            return res;
+        }
+
+        // --- STREAMING_CHUNK: Processing Statements, Cash Flows, Ratio Calculations and UI binding ---
+        function generateReports() {
+            state.statementsReportPeriod = document.getElementById('statements-report-year').value;
+            state.statementsComparePeriod = document.getElementById('statements-compare-year').value;
+            state.cfReportPeriod = document.getElementById('cf-report-year').value;
+            state.analysisReportPeriod = document.getElementById('analysis-report-year').value;
+            state.analysisComparePeriod = document.getElementById('analysis-compare-year').value;
+            state.dashboardReportPeriod = document.getElementById('dashboard-report-year').value;
+            state.dashboardComparePeriod = document.getElementById('dashboard-compare-year').value;
+
+            let totalDebit = 0, totalCredit = 0;
+            const currentRows = db[state.activeInputPeriod] || [];
+            currentRows.forEach(r => { totalDebit+=r.debit; totalCredit+=r.credit; });
+            if(Math.abs(totalDebit - totalCredit) > 1) {
+                showAlert('عذراً، ميزان المراجعة الحالي غير متزن. يرجى مراجعة المدخلات لإنتاج التقارير بدقة.', 'error');
+                return;
+            }
+
+            const stCurr = calculatePeriod(db[state.statementsReportPeriod]);
+            const stPrev = calculatePeriod(db[state.statementsComparePeriod]);
+
+            const cfCurr = calculatePeriod(db[state.cfReportPeriod]);
+            
+            const availableYears = Object.keys(db).sort((a,b) => a.localeCompare(b));
+            const activeCFIdx = availableYears.indexOf(state.cfReportPeriod);
+            const cfPrevPeriod = activeCFIdx > 0 ? availableYears[activeCFIdx - 1] : state.cfReportPeriod;
+            const cfPrev = calculatePeriod(db[cfPrevPeriod]);
+
+            // A. Income Statement (Dynamic comparative headings)
+            document.getElementById('is-header-current').textContent = state.statementsReportPeriod;
+            document.getElementById('is-header-compare').textContent = state.statementsComparePeriod;
+            
+            document.getElementById('is-body').innerHTML = `
+                <tr><td class="py-2.5 font-bold">إيرادات المبيعات</td><td class="py-2.5 font-bold">${fmtNum(stCurr.revenue)}</td><td class="py-2.5 text-slate-500">${fmtNum(stPrev.revenue)}</td></tr>
+                <tr><td class="py-2.5">يخصم: تكلفة المبيعات</td><td class="py-2.5">${fmtNum(-stCurr.cogs)}</td><td class="py-2.5 text-slate-500">${fmtNum(-stPrev.cogs)}</td></tr>
+                <tr class="bg-blue-50/50 border-y-2 border-blue-100"><td class="py-3 font-black text-blue-900">إجمالي الربح (Gross Profit)</td><td class="py-3 font-black text-blue-700">${fmtNum(stCurr.gross_profit)}</td><td class="py-3 font-bold text-blue-400">${fmtNum(stPrev.gross_profit)}</td></tr>
+                
+                <tr><td class="py-2.5">إيرادات أخرى</td><td class="py-2.5">${fmtNum(stCurr.other_inc)}</td><td class="py-2.5 text-slate-500">${fmtNum(stPrev.other_inc)}</td></tr>
+                <tr><td class="py-2.5">مصاريف بيعية وإدارية عمومية</td><td class="py-2.5">${fmtNum(-stCurr.sg_a)}</td><td class="py-2.5 text-slate-500">${fmtNum(-stPrev.sg_a)}</td></tr>
+                <tr><td class="py-2.5">إهلاك واستهلاك</td><td class="py-2.5">${fmtNum(-stCurr.depreciation)}</td><td class="py-2.5 text-slate-500">${fmtNum(-stPrev.depreciation)}</td></tr>
+                <tr class="bg-slate-100/50 border-y border-slate-200"><td class="py-3 font-black text-slate-800">الربح التشغيلي (EBIT)</td><td class="py-3 font-bold">${fmtNum(stCurr.ebit)}</td><td class="py-3 text-slate-500 font-bold">${fmtNum(stPrev.ebit)}</td></tr>
+                
+                <tr><td class="py-2.5">تكاليف التمويل (الفوائد)</td><td class="py-2.5">${fmtNum(-stCurr.finance_cost)}</td><td class="py-2.5 text-slate-500">${fmtNum(-stPrev.finance_cost)}</td></tr>
+                <tr><td class="py-2.5 border-b border-slate-200">الزكاة والضريبة</td><td class="py-2.5 border-b border-slate-200">${fmtNum(-stCurr.tax)}</td><td class="py-2.5 text-slate-500 border-b border-slate-200">${fmtNum(-stPrev.tax)}</td></tr>
+                <tr class="bg-emerald-50 border-b-2 border-emerald-500"><td class="py-4 font-black text-emerald-900 text-lg">صافي الربح (Net Income)</td><td class="py-4 font-black text-emerald-700 text-lg">${fmtNum(stCurr.net_income)}</td><td class="py-4 font-bold text-emerald-500">${fmtNum(stPrev.net_income)}</td></tr>
+            `;
+
+            // B. Balance Sheet (Dynamic comparative headings)
+            document.getElementById('bs-header-current').textContent = state.statementsReportPeriod;
+            document.getElementById('bs-header-compare').textContent = state.statementsComparePeriod;
+
+            document.getElementById('bs-body').innerHTML = `
+                <tr class="bg-slate-100"><td colspan="3" class="py-2 px-3 font-black text-slate-800 text-center">الأصول (Assets)</td></tr>
+                <tr><td colspan="3" class="py-2 font-bold text-slate-600 bg-slate-50">الأصول غير المتداولة</td></tr>
+                <tr><td class="py-2 pr-6">الممتلكات والآلات والمعدات (PPE)</td><td class="py-2">${fmtNum(stCurr.ppe)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.ppe)}</td></tr>
+                <tr><td class="py-2 pr-6 border-b border-slate-100">أصول غير ملموسة وأخرى</td><td class="py-2 border-b border-slate-100">${fmtNum(stCurr.intangible + stCurr.other_nca)}</td><td class="py-2 text-slate-500 border-b border-slate-100">${fmtNum(stPrev.intangible + stPrev.other_nca)}</td></tr>
+                
+                <tr><td colspan="3" class="py-2 font-bold text-slate-600 bg-slate-50 mt-2">الأصول المتداولة</td></tr>
+                <tr><td class="py-2 pr-6">المخزون</td><td class="py-2">${fmtNum(stCurr.inventory)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.inventory)}</td></tr>
+                <tr><td class="py-2 pr-6">الذمم المدينة التجارية</td><td class="py-2">${fmtNum(stCurr.ar)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.ar)}</td></tr>
+                <tr><td class="py-2 pr-6">النقد وما في حكمه</td><td class="py-2">${fmtNum(stCurr.cash)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.cash)}</td></tr>
+                <tr><td class="py-2 pr-6 border-b border-slate-200">أصول متداولة أخرى</td><td class="py-2 border-b border-slate-200">${fmtNum(stCurr.other_ca)}</td><td class="py-2 text-slate-500 border-b border-slate-200">${fmtNum(stPrev.other_ca)}</td></tr>
+                <tr class="bg-indigo-50 border-b-2 border-indigo-200"><td class="py-3 font-black text-indigo-900">إجمالي الأصول (Total Assets)</td><td class="py-3 font-black text-indigo-700">${fmtNum(stCurr.total_assets)}</td><td class="py-3 font-bold text-indigo-400">${fmtNum(stPrev.total_assets)}</td></tr>
+                
+                <tr class="bg-slate-100"><td colspan="3" class="py-2 px-3 font-black text-slate-800 text-center mt-6">الالتزامات وحقوق الملكية (Equity & Liabilities)</td></tr>
+                <tr><td colspan="3" class="py-2 font-bold text-slate-600 bg-slate-50">حقوق الملكية</td></tr>
+                <tr><td class="py-2 pr-6">رأس المال</td><td class="py-2">${fmtNum(stCurr.capital)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.capital)}</td></tr>
+                <tr><td class="py-2 pr-6 border-b border-slate-100">الأرباح المبقاة</td><td class="py-2 border-b border-slate-100">${fmtNum(stCurr.re_ending)}</td><td class="py-2 text-slate-500 border-b border-slate-100">${fmtNum(stPrev.re_ending)}</td></tr>
+                
+                <tr><td colspan="3" class="py-2 font-bold text-slate-600 bg-slate-50">الالتزامات غير المتداولة</td></tr>
+                <tr><td class="py-2 pr-6 border-b border-slate-100">قروض طويلة الأجل وأخرى</td><td class="py-2 border-b border-slate-100">${fmtNum(stCurr.total_ncl)}</td><td class="py-2 text-slate-500 border-b border-slate-100">${fmtNum(stPrev.total_ncl)}</td></tr>
+                
+                <tr><td colspan="3" class="py-2 font-bold text-slate-600 bg-slate-50">الالتزامات المتداولة</td></tr>
+                <tr><td class="py-2 pr-6">الذمم الدائنة التجارية</td><td class="py-2">${fmtNum(stCurr.ap)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.ap)}</td></tr>
+                <tr><td class="py-2 pr-6">قروض قصيرة الأجل</td><td class="py-2">${fmtNum(stCurr.st_debt)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.st_debt)}</td></tr>
+                <tr><td class="py-2 pr-6 border-b border-slate-200">التزامات متداولة أخرى</td><td class="py-2 border-b border-slate-200">${fmtNum(stCurr.other_cl)}</td><td class="py-2 text-slate-500 border-b border-slate-200">${fmtNum(stPrev.other_cl)}</td></tr>
+                
+                <tr class="bg-indigo-50 border-b-2 border-indigo-200"><td class="py-3 font-black text-indigo-900">إجمالي الالتزامات وحقوق الملكية</td><td class="py-3 font-black text-indigo-700">${fmtNum(stCurr.total_l_and_e)}</td><td class="py-3 font-bold text-indigo-400">${fmtNum(stPrev.total_l_and_e)}</td></tr>
+            `;
+
+            // C. Cash Flow Statement (Indirect Method comparing to previous year dynamically)
+            document.getElementById('cf-header-current').textContent = state.cfReportPeriod;
+
+            let deltaAR = cfPrev.ar - cfCurr.ar; 
+            let deltaInv = cfPrev.inventory - cfCurr.inventory;
+            let deltaOtherCA = cfPrev.other_ca - cfCurr.other_ca;
+            let deltaAP = cfCurr.ap - cfPrev.ap; 
+            let deltaOtherCL = cfCurr.other_cl - cfPrev.other_cl;
+            
+            let OCF = cfCurr.net_income + cfCurr.depreciation + deltaAR + deltaInv + deltaOtherCA + deltaAP + deltaOtherCL;
+            
+            let capEx = (cfCurr.ppe - cfPrev.ppe) + cfCurr.depreciation; 
+            let deltaIntangibles = cfCurr.intangible - cfPrev.intangible;
+            let ICF = -(capEx + deltaIntangibles);
+            
+            let deltaDebt = (cfCurr.st_debt - cfPrev.st_debt) + (cfCurr.lt_debt - cfPrev.lt_debt);
+            let deltaCap = cfCurr.capital - cfPrev.capital;
+            let FCF = deltaDebt + deltaCap - cfCurr.dividends;
+            
+            let netCF = OCF + ICF + FCF;
+
+            document.getElementById('cf-body').innerHTML = `
+                <tr><td colspan="2" class="py-2 font-black text-slate-800 bg-slate-100">التدفقات النقدية من الأنشطة التشغيلية</td></tr>
+                <tr><td class="py-2 pr-6">صافي الربح قبل الضريبة والزكاة</td><td class="py-2">${fmtNum(cfCurr.net_income)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600">تعديل: إهلاك واستهلاك غير نقدي</td><td class="py-2">${fmtNum(cfCurr.depreciation)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600">التغير في الذمم المدينة</td><td class="py-2">${fmtNum(deltaAR)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600">التغير في المخزون</td><td class="py-2">${fmtNum(deltaInv)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600">التغير في الذمم الدائنة</td><td class="py-2">${fmtNum(deltaAP)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600 border-b border-slate-200">التغير في رأس المال العامل الآخر</td><td class="py-2 border-b border-slate-200">${fmtNum(deltaOtherCA + deltaOtherCL)}</td></tr>
+                <tr class="bg-slate-50"><td class="py-3 font-bold text-slate-900 pr-4">صافي النقد من الأنشطة التشغيلية (OCF)</td><td class="py-3 font-black text-emerald-600">${fmtNum(OCF)}</td></tr>
+                
+                <tr><td colspan="2" class="py-2 font-black text-slate-800 bg-slate-100 mt-4">التدفقات النقدية من الأنشطة الاستثمارية</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600">الإنفاق الرأسمالي - شراء ممتلكات وآلات (CapEx)</td><td class="py-2">${fmtNum(-capEx)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600 border-b border-slate-200">التغير في أصول غير ملموسة وأخرى</td><td class="py-2 border-b border-slate-200">${fmtNum(-deltaIntangibles)}</td></tr>
+                <tr class="bg-slate-50"><td class="py-3 font-bold text-slate-900 pr-4">صافي النقد من الأنشطة الاستثمارية (ICF)</td><td class="py-3 font-black text-blue-600">${fmtNum(ICF)}</td></tr>
+                
+                <tr><td colspan="2" class="py-2 font-black text-slate-800 bg-slate-100 mt-4">التدفقات النقدية من الأنشطة التمويلية</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600">صافي التغير في القروض والتسيهلات</td><td class="py-2">${fmtNum(deltaDebt)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600">توزيعات أرباح مدفوعة للمساهمين</td><td class="py-2">${fmtNum(-cfCurr.dividends)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600 border-b border-slate-200">التغير في رأس المال</td><td class="py-2 border-b border-slate-200">${fmtNum(deltaCap)}</td></tr>
+                <tr class="bg-slate-50"><td class="py-3 font-bold text-slate-900 pr-4">صافي النقد من الأنشطة التمويلية (FCF)</td><td class="py-3 font-black text-indigo-600">${fmtNum(FCF)}</td></tr>
+                
+                <tr class="bg-slate-200 border-t-2 border-slate-400"><td class="py-3 px-2 font-black text-lg">صافي التغير الإجمالي في النقد</td><td class="py-3 px-2 font-black text-lg ${netCF>=0?'text-emerald-700':'text-red-600'}">${fmtNum(netCF)}</td></tr>
+                <tr><td class="py-2 px-2 font-bold">النقد وما في حكمه (بداية الفترة)</td><td class="py-2 px-2 font-bold">${fmtNum(cfPrev.cash)}</td></tr>
+                <tr class="bg-emerald-100 border-t-2 border-emerald-500"><td class="py-4 px-2 font-black text-xl text-emerald-900">النقد وما في حكمه (نهاية الفترة)</td><td class="py-4 px-2 font-black text-xl text-emerald-700">${fmtNum(cfPrev.cash + netCF)}</td></tr>
+            `;
+
+            // D. Comparative Ratios and Financial Analysis
+            const anCurr = calculatePeriod(db[state.analysisReportPeriod]);
+            const anPrev = calculatePeriod(db[state.analysisComparePeriod]);
+
+            const ratioHTML = (title, val, prevVal, unit, color) => `
+                <div class="glass-card p-4 border-r-4 border-${color}-500 hover:shadow-lg transition-shadow">
+                    <p class="text-xs text-slate-500 font-bold mb-1 truncate">${title}</p>
+                    <h4 class="text-2xl font-black text-slate-800">${val} <span class="text-xs text-slate-400 font-normal">${unit}</span></h4>
+                    <p class="text-xs text-slate-400 font-semibold mt-1">السنة المقارنة: ${prevVal} ${unit}</p>
+                </div>
+            `;
+
+            let crCurr = anCurr.total_cl > 0 ? (anCurr.total_ca / anCurr.total_cl).toFixed(2) : 'N/A';
+            let crPrev = anPrev.total_cl > 0 ? (anPrev.total_ca / anPrev.total_cl).toFixed(2) : 'N/A';
+
+            let qrCurr = anCurr.total_cl > 0 ? ((anCurr.total_ca - anCurr.inventory) / anCurr.total_cl).toFixed(2) : 'N/A';
+            let qrPrev = anPrev.total_cl > 0 ? ((anPrev.total_ca - anPrev.inventory) / anPrev.total_cl).toFixed(2) : 'N/A';
+            
+            let gmCurr = anCurr.revenue > 0 ? ((anCurr.gross_profit / anCurr.revenue) * 100).toFixed(1) : 0;
+            let gmPrev = anPrev.revenue > 0 ? ((anPrev.gross_profit / anPrev.revenue) * 100).toFixed(1) : 0;
+
+            let nmCurr = anCurr.revenue > 0 ? ((anCurr.net_income / anCurr.revenue) * 100).toFixed(1) : 0;
+            let nmPrev = anPrev.revenue > 0 ? ((anPrev.net_income / anPrev.revenue) * 100).toFixed(1) : 0;
+
+            let roeCurr = anCurr.total_equity > 0 ? ((anCurr.net_income / anCurr.total_equity) * 100).toFixed(1) : 0;
+            let roePrev = anPrev.total_equity > 0 ? ((anPrev.net_income / anPrev.total_equity) * 100).toFixed(1) : 0;
+            
+            let deCurr = anCurr.total_equity > 0 ? ((anCurr.st_debt + anCurr.lt_debt) / anCurr.total_equity).toFixed(2) : 0;
+            let dePrev = anPrev.total_equity > 0 ? ((anPrev.st_debt + anPrev.lt_debt) / anPrev.total_equity).toFixed(2) : 0;
+
+            let icCurr = anCurr.finance_cost > 0 ? (anCurr.ebit / anCurr.finance_cost).toFixed(1) : 'N/A';
+            let icPrev = anPrev.finance_cost > 0 ? (anPrev.ebit / anPrev.finance_cost).toFixed(1) : 'N/A';
+
+            document.getElementById('comprehensive-ratios').innerHTML = `
+                <h4 class="font-bold text-slate-700 mb-4 border-b pb-2"><i class="fa-solid fa-droplet text-blue-500"></i> مؤشرات السيولة (Liquidity) - مقارنة بين [${state.analysisReportPeriod}] و [${state.analysisComparePeriod}]</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    ${ratioHTML('نسبة التداول (Current R)', crCurr, crPrev, 'مرة', 'blue')}
+                    ${ratioHTML('النسبة السريعة (Quick R)', qrCurr, qrPrev, 'مرة', 'blue')}
+                    ${ratioHTML('رأس المال العامل', fmtNum(anCurr.total_ca - anCurr.total_cl), fmtNum(anPrev.total_ca - anPrev.total_cl), 'ريال', 'blue')}
+                </div>
+                
+                <h4 class="font-bold text-slate-700 mb-4 border-b pb-2"><i class="fa-solid fa-chart-line text-emerald-500"></i> مؤشرات الربحية (Profitability)</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    ${ratioHTML('هامش مجمل الربح', gmCurr, gmPrev, '%', 'emerald')}
+                    ${ratioHTML('هامش صافي الربح', nmCurr, nmPrev, '%', 'emerald')}
+                    ${ratioHTML('العائد على حقوق الملكية (ROE)', roeCurr, roePrev, '%', 'emerald')}
+                    ${ratioHTML('الربح قبل الفوائد والضريبة', fmtNum(anCurr.ebit), fmtNum(anPrev.ebit), 'ريال', 'emerald')}
+                </div>
+
+                <h4 class="font-bold text-slate-700 mb-4 border-b pb-2"><i class="fa-solid fa-scale-balanced text-purple-500"></i> مؤشرات الرفع المالي (Leverage)</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    ${ratioHTML('إجمالي الديون لحقوق الملكية', deCurr, dePrev, 'مرة', 'purple')}
+                    ${ratioHTML('تغطية الفوائد', icCurr, icPrev, 'مرة', 'purple')}
+                </div>
+            `;
+
+            // E. Textual AI Analytics
+            let analysisTxt = `<ul class="list-disc list-inside space-y-2">`;
+            analysisTxt += `<li>حققت الشركة في سنة <strong>${state.analysisReportPeriod}</strong> صافي ربح قدره <strong>${fmtNum(anCurr.net_income)}</strong> مقارنة بـ <strong>${fmtNum(anPrev.net_income)}</strong> في عام ${state.analysisComparePeriod}.</li>`;
+            analysisTxt += `<li>سيولة الشركة قصيرة الأجل <strong>${crCurr >= 1.2 ? 'ممتازة ومستقرة' : (crCurr >= 1 ? 'مقبولة' : 'تحتاج لمراقبة (أقل من 1)')}</strong>، حيث تغطي الأصول المتداولة التزاماتها بمقدار ${crCurr} مرة (المقارنة: ${crPrev} مرة).</li>`;
+            analysisTxt += `<li>جودة الأرباح: تحول الشركة كل 100 ريال مبيعات إلى <strong>${nmCurr} ريال</strong> كربح صافي في ${state.analysisReportPeriod} (مقارنة بـ ${nmPrev} ريال سابقاً).</li>`;
+            analysisTxt += `<li>نسبة الدين لحقوق الملكية تبلغ <strong>${deCurr} مرة</strong>، مما يعكس هيكل تمويل <strong>${deCurr > 1.5 ? 'مرتفع المخاطر نسبياً' : 'مستقر ومتوازن'}</strong>.</li>`;
+            document.getElementById('ai-analysis-text').innerHTML = analysisTxt;
+
+            // F. Dashboard Visuals (Comparative metrics for active & compare dashboard period)
+            const dbCurr = calculatePeriod(db[state.dashboardReportPeriod]);
+            const dbPrev = calculatePeriod(db[state.dashboardComparePeriod]);
+
+            let dbDeltaAR = dbPrev.ar - dbCurr.ar;
+            let dbDeltaInv = dbPrev.inventory - dbCurr.inventory;
+            let dbDeltaOtherCA = dbPrev.other_ca - dbCurr.other_ca;
+            let dbDeltaAP = dbCurr.ap - dbPrev.ap;
+            let dbDeltaOtherCL = dbCurr.other_cl - dbPrev.other_cl;
+            let dbOCF = dbCurr.net_income + dbCurr.depreciation + dbDeltaAR + dbDeltaInv + dbDeltaOtherCA + dbDeltaAP + dbDeltaOtherCL;
+
+            document.getElementById('kpi-container').innerHTML = `
+                <div class="bg-gradient-to-br from-blue-700 to-indigo-800 text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
+                    <i class="fa-solid fa-chart-line absolute -left-4 -bottom-4 text-8xl opacity-10"></i>
+                    <p class="text-blue-200 font-bold text-sm mb-1 uppercase tracking-widest">إيرادات مبيعات (${state.dashboardReportPeriod})</p>
+                    <h3 class="text-3xl font-black mb-1">${fmtNum(dbCurr.revenue)}</h3>
+                    <p class="text-xs text-blue-300 font-semibold">المقارنة لـ (${state.dashboardComparePeriod}): ${fmtNum(dbPrev.revenue)}</p>
+                </div>
+                <div class="bg-gradient-to-br from-emerald-500 to-teal-700 text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
+                    <i class="fa-solid fa-money-bill-wave absolute -left-4 -bottom-4 text-8xl opacity-10"></i>
+                    <p class="text-emerald-100 font-bold text-sm mb-1 uppercase tracking-widest">EBITDA (${state.dashboardReportPeriod})</p>
+                    <h3 class="text-3xl font-black mb-1">${fmtNum(dbCurr.ebitda)}</h3>
+                    <p class="text-xs text-emerald-200 font-semibold">المقارنة لـ (${state.dashboardComparePeriod}): ${fmtNum(dbPrev.ebitda)}</p>
+                </div>
+                <div class="bg-gradient-to-br from-purple-600 to-violet-800 text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
+                    <i class="fa-solid fa-vault absolute -left-4 -bottom-4 text-8xl opacity-10"></i>
+                    <p class="text-purple-200 font-bold text-sm mb-1 uppercase tracking-widest">النقد التشغيلي (OCF)</p>
+                    <h3 class="text-3xl font-black mb-1">${fmtNum(dbOCF)}</h3>
+                    <p class="text-xs text-purple-300 font-semibold">يقيس تدفقات سنة العرض النشطة</p>
+                </div>
+                <div class="bg-gradient-to-br from-slate-700 to-slate-900 text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
+                    <i class="fa-solid fa-scale-balanced absolute -left-4 -bottom-4 text-8xl opacity-10"></i>
+                    <p class="text-slate-300 font-bold text-sm mb-1 uppercase tracking-widest">إجمالي الأصول (${state.dashboardReportPeriod})</p>
+                    <h3 class="text-3xl font-black mb-1">${fmtNum(dbCurr.total_assets)}</h3>
+                    <p class="text-xs text-slate-400 font-semibold">المقارنة لـ (${state.dashboardComparePeriod}): ${fmtNum(dbPrev.total_assets)}</p>
+                </div>
+            `;
+
+            // G. Rendering Charts with dynamic destruction
+            Chart.defaults.font.family = 'Cairo';
+            const destroyChart = (id) => { if(charts[id]) charts[id].destroy(); };
+
+            destroyChart('profitChart');
+            charts['profitChart'] = new Chart(document.getElementById('profitabilityChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: [`المقارنة (${state.dashboardComparePeriod})`, `الحالية (${state.dashboardReportPeriod})`],
+                    datasets: [
+                        { label: 'الإيرادات', data: [dbPrev.revenue, dbCurr.revenue], backgroundColor: '#3b82f6', borderRadius: 4 },
+                        { label: 'إجمالي الربح', data: [dbPrev.gross_profit, dbCurr.gross_profit], backgroundColor: '#8b5cf6', borderRadius: 4 },
+                        { label: 'صافي الربح', data: [dbPrev.net_income, dbCurr.net_income], backgroundColor: '#10b981', borderRadius: 4 }
+                    ]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            destroyChart('cfChart');
+            charts['cfChart'] = new Chart(document.getElementById('cashFlowChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['تشغيلي (OCF)', 'استثماري (ICF)', 'تمويلي (FCF)', 'الصافي'],
+                    datasets: [{
+                        label: 'التدفق النقدي',
+                        data: [OCF, ICF, FCF, netCF],
+                        backgroundColor: [OCF>0?'#10b981':'#ef4444', ICF>0?'#10b981':'#ef4444', FCF>0?'#10b981':'#ef4444', netCF>0?'#3b82f6':'#ef4444'],
+                        borderRadius: 6
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            destroyChart('assetsChart');
+            charts['assetsChart'] = new Chart(document.getElementById('assetsChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['النقدية', 'العملاء', 'المخزون', 'أصول ثابتة (PPE)'],
+                    datasets: [{ data: [dbCurr.cash, dbCurr.ar, dbCurr.inventory, dbCurr.ppe], backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#6366f1'], borderWidth: 0 }]
+                },
+                options: { responsive: true, cutout: '65%' }
+            });
+
+            destroyChart('liabChart');
+            charts['liabChart'] = new Chart(document.getElementById('liabilitiesChart').getContext('2d'), {
+                type: 'pie',
+                data: {
+                    labels: ['موردون (AP)', 'قروض قصيرة', 'قروض طويلة', 'حقوق الملكية'],
+                    datasets: [{ data: [dbCurr.ap, dbCurr.st_debt, dbCurr.lt_debt, dbCurr.total_equity], backgroundColor: ['#ef4444', '#f97316', '#8b5cf6', '#0ea5e9'], borderWidth: 0 }]
+                },
+                options: { responsive: true }
+            });
+
+            showAlert('تم تحديث ومعالجة كافة التقارير والرسوم البيانية بنجاح!', 'success');
+        }
+
+        window.onload = () => {
+            populateAllYearDropdowns();
+            renderTable();
+            
+            const _showAlert = showAlert; 
+            showAlert = () => {};
+            generateReports();
+            showAlert = _showAlert;
+            
+            switchTab('input-tab');
+        };
+    </script>
+</body>
+<a href="index.html">الرئيسية</a>
+</html>

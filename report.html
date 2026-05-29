@@ -372,25 +372,36 @@
 
     <script>
         // --- Core Account Structures (IFRS mapping) ---
+        // Added the missing IFRS accounts (ROU Asset, Land, Investment Prop, VAT Payable, Accrued Exp, Lease Liability, EOS Provision, Statutory/General Reserves, Amortization)
         const accountTypes = {
             '-- الأصول (Assets) --': {
                 'cash': 'النقد وما في حكمه',
                 'ar': 'الذمم المدينة التجارية',
                 'inventory': 'المخزون',
+                'prepaid_exp': 'مصاريف مدفوعة مقدماً',
                 'other_ca': 'أصول متداولة أخرى',
+                'land': 'الأراضي',
                 'ppe': 'الممتلكات والآلات والمعدات',
+                'rou_asset': 'أصول حق الاستخدام (ROU)',
+                'inv_property': 'استثمارات عقارية',
                 'intangible': 'أصول غير ملموسة',
                 'other_nca': 'أصول غير متداولة أخرى'
             },
             '-- الالتزامات (Liabilities) --': {
                 'ap': 'الذمم الدائنة التجارية',
+                'vat_payable': 'ضريبة القيمة المضافة المستحقة',
+                'accrued_exp': 'مصاريف مستحقة',
                 'st_debt': 'قروض وتسهيلات قصيرة الأجل',
                 'other_cl': 'التزامات متداولة أخرى',
                 'lt_debt': 'قروض طويلة الأجل',
+                'lease_liability': 'التزامات عقود الإيجار (حق الاستخدام)',
+                'eos_provision': 'مخصص مكافأة نهاية الخدمة',
                 'other_ncl': 'التزامات غير متداولة أخرى'
             },
             '-- حقوق الملكية (Equity) --': {
                 'capital': 'رأس المال',
+                'statutory_reserve': 'احتياطي نظامي/قانوني',
+                'general_reserve': 'احتياطي عام',
                 'retained_earnings': 'أرباح مبقاة',
                 'dividends': 'توزيعات أرباح (مدين)'
             },
@@ -399,7 +410,8 @@
                 'cogs': 'تكلفة المبيعات',
                 'other_inc': 'إيرادات أخرى',
                 'sg_a': 'مصاريف بيعية وإدارية عمومية',
-                'depreciation': 'إهلاك واستهلاك',
+                'depreciation': 'إهلاك الممتلكات والمعدات',
+                'amortization': 'إطفاء حق الاستخدام والأصول غير الملموسة',
                 'finance_cost': 'تكاليف التمويل (فوائد)',
                 'tax': 'مصروف الزكاة والضريبة'
             }
@@ -412,76 +424,45 @@
             }
         }
 
-        // Standard account template to clone when creating new periods
+        // Standard account template to clone when creating new periods (updated with new IFRS accounts)
         const defaultAccountTemplate = [
-            { id: '101', name: 'بنك الراجحي + الصندوق', type: 'cash', debit: 0, credit: 0 },
+            { id: '101', name: 'البنوك والصندوق', type: 'cash', debit: 0, credit: 0 },
             { id: '102', name: 'العملاء (ذمم مدينة)', type: 'ar', debit: 0, credit: 0 },
             { id: '103', name: 'مخزون البضاعة', type: 'inventory', debit: 0, credit: 0 },
-            { id: '104', name: 'مصاريف مدفوعة مقدماً', type: 'other_ca', debit: 0, credit: 0 },
+            { id: '104', name: 'مصاريف مدفوعة مقدماً', type: 'prepaid_exp', debit: 0, credit: 0 },
+            { id: '105', name: 'أرصدة مدينة أخرى', type: 'other_ca', debit: 0, credit: 0 },
+            { id: '110', name: 'الأراضي', type: 'land', debit: 0, credit: 0 },
             { id: '111', name: 'الآلات والمعدات (الصافي)', type: 'ppe', debit: 0, credit: 0 },
-            { id: '112', name: 'برمجيات وحقوق ملكية', type: 'intangible', debit: 0, credit: 0 },
+            { id: '112', name: 'أصل حق الاستخدام (ROU)', type: 'rou_asset', debit: 0, credit: 0 },
+            { id: '113', name: 'استثمارات عقارية', type: 'inv_property', debit: 0, credit: 0 },
+            { id: '114', name: 'برمجيات وحقوق ملكية', type: 'intangible', debit: 0, credit: 0 },
             { id: '201', name: 'الموردون', type: 'ap', debit: 0, credit: 0 },
             { id: '202', name: 'تسهيلات بنكية قصيرة', type: 'st_debt', debit: 0, credit: 0 },
-            { id: '203', name: 'مستحقات أخرى', type: 'other_cl', debit: 0, credit: 0 },
+            { id: '203', name: 'ضريبة القيمة المضافة المستحقة', type: 'vat_payable', debit: 0, credit: 0 },
+            { id: '204', name: 'مصاريف مستحقة', type: 'accrued_exp', debit: 0, credit: 0 },
+            { id: '205', name: 'مستحقات أخرى', type: 'other_cl', debit: 0, credit: 0 },
             { id: '211', name: 'قرض بنكي طويل الأجل', type: 'lt_debt', debit: 0, credit: 0 },
+            { id: '212', name: 'التزام عقود الإيجار (حق الاستخدام)', type: 'lease_liability', debit: 0, credit: 0 },
+            { id: '213', name: 'مخصص مكافأة نهاية الخدمة', type: 'eos_provision', debit: 0, credit: 0 },
             { id: '301', name: 'رأس المال المدفوع', type: 'capital', debit: 0, credit: 0 },
-            { id: '302', name: 'الأرباح المبقاة (أول المدة)', type: 'retained_earnings', debit: 0, credit: 0 },
-            { id: '303', name: 'توزيعات أرباح', type: 'dividends', debit: 0, credit: 0 },
+            { id: '302', name: 'الاحتياطي النظامي/القانوني', type: 'statutory_reserve', debit: 0, credit: 0 },
+            { id: '303', name: 'الاحتياطي العام', type: 'general_reserve', debit: 0, credit: 0 },
+            { id: '304', name: 'الأرباح المبقاة (أول المدة)', type: 'retained_earnings', debit: 0, credit: 0 },
+            { id: '305', name: 'توزيعات أرباح', type: 'dividends', debit: 0, credit: 0 },
             { id: '401', name: 'إيرادات المبيعات', type: 'revenue', debit: 0, credit: 0 },
             { id: '402', name: 'إيرادات متنوعة', type: 'other_inc', debit: 0, credit: 0 },
             { id: '501', name: 'تكلفة البضاعة المباعة', type: 'cogs', debit: 0, credit: 0 },
             { id: '502', name: 'رواتب وإيجارات وتسويق', type: 'sg_a', debit: 0, credit: 0 },
-            { id: '503', name: 'مجمع الإهلاك (مصروف)', type: 'depreciation', debit: 0, credit: 0 },
-            { id: '504', name: 'فوائد بنكية', type: 'finance_cost', debit: 0, credit: 0 },
-            { id: '505', name: 'مخصص الزكاة', type: 'tax', debit: 0, credit: 0 }
+            { id: '503', name: 'مجمع إهلاك الممتلكات والمعدات', type: 'depreciation', debit: 0, credit: 0 },
+            { id: '504', name: 'مجمع إطفاء حق الاستخدام والبرمجيات', type: 'amortization', debit: 0, credit: 0 },
+            { id: '505', name: 'فوائد بنكية (تكلفة التمويل)', type: 'finance_cost', debit: 0, credit: 0 },
+            { id: '506', name: 'مخصص الزكاة / الضريبة', type: 'tax', debit: 0, credit: 0 }
         ];
 
         // Initializing Database state with comparative data
         const db = {
-            "2026": [
-                { id: '101', name: 'البنوك + الصندوق', type: 'cash', debit: 0, credit: 0 },
-                { id: '102', name: 'العملاء (ذمم مدينة)', type: 'ar', debit: 0, credit: 0 },
-                { id: '103', name: 'مخزون البضاعة', type: 'inventory', debit: 0, credit: 0 },
-                { id: '104', name: 'مصاريف مدفوعة مقدماً', type: 'other_ca', debit: 0, credit: 0 },
-                { id: '111', name: 'الآلات والمعدات (الصافي)', type: 'ppe', debit: 0, credit: 0 },
-                { id: '112', name: 'برمجيات', type: 'intangible', debit: 0, credit: 0 },
-                { id: '201', name: 'الموردون', type: 'ap', debit: 0, credit: 0 },
-                { id: '202', name: 'تسهيلات بنكية قصيرة', type: 'st_debt', debit: 0, credit: 0 },
-                { id: '203', name: 'مستحقات أخرى', type: 'other_cl', debit: 0, credit: 0 },
-                { id: '211', name: 'قرض بنكي طويل الأجل', type: 'lt_debt', debit: 0, credit: 0 },
-                { id: '301', name: 'رأس المال المدفوع', type: 'capital', debit: 0, credit: 0 },
-                { id: '302', name: 'الأرباح المبقاة (أول المدة)', type: 'retained_earnings', debit: 0, credit: 0 },
-                { id: '303', name: 'توزيعات أرباح', type: 'dividends', debit: 0, credit: 0 },
-                { id: '401', name: 'إيرادات المبيعات', type: 'revenue', debit: 0, credit: 0 },
-                { id: '402', name: 'إيرادات متنوعة', type: 'other_inc', debit: 0, credit: 0 },
-                { id: '501', name: 'تكلفة البضاعة المباعة', type: 'cogs', debit: 0, credit: 0 },
-                { id: '502', name: 'رواتب وإيجارات وتسويق', type: 'sg_a', debit: 0, credit: 0 },
-                { id: '503', name: 'مجمع الإهلاك (مصروف)', type: 'depreciation', debit: 0, credit: 0 },
-                { id: '504', name: 'فوائد بنكية', type: 'finance_cost', debit: 0, credit: 0 },
-                { id: '505', name: 'مخصص الزكاة', type: 'tax', debit: 0, credit: 0 }
-            ],
-            "2025": [
-                { id: '101', name: 'البنوك + الصندوق', type: 'cash', debit: 0, credit: 0 },
-                { id: '102', name: 'العملاء (ذمم مدينة)', type: 'ar', debit: 0, credit: 0 },
-                { id: '103', name: 'مخزون البضاعة', type: 'inventory', debit: 0, credit: 0 },
-                { id: '104', name: 'مصاريف مدفوعة مقدماً', type: 'other_ca', debit: 0, credit: 0 },
-                { id: '111', name: 'الآلات والمعدات (الصافي)', type: 'ppe', debit: 0, credit: 0 },
-                { id: '112', name: 'برمجيات', type: 'intangible', debit: 0, credit: 0 },
-                { id: '201', name: 'الموردون', type: 'ap', debit: 0, credit: 0 },
-                { id: '202', name: 'تسهيلات بنكية قصيرة', type: 'st_debt', debit: 0, credit: 0 },
-                { id: '203', name: 'مستحقات أخرى', type: 'other_cl', debit: 0, credit: 0 },
-                { id: '211', name: 'قرض بنكي طويل الأجل', type: 'lt_debt', debit: 0, credit: 0 },
-                { id: '301', name: 'رأس المال المدفوع', type: 'capital', debit: 0, credit: 0 },
-                { id: '302', name: 'الأرباح المبقاة (أول المدة)', type: 'retained_earnings', debit: 0, credit: 0 },
-                { id: '303', name: 'توزيعات أرباح', type: 'dividends', debit: 0, credit: 0 },
-                { id: '401', name: 'إيرادات المبيعات', type: 'revenue', debit: 0, credit: 0 },
-                { id: '402', name: 'إيرادات متنوعة', type: 'other_inc', debit: 0, credit: 0 },
-                { id: '501', name: 'تكلفة البضاعة المباعة', type: 'cogs', debit: 0, credit: 0 },
-                { id: '502', name: 'رواتب وإيجارات وتسويق', type: 'sg_a', debit: 0, credit: 0 },
-                { id: '503', name: 'مجمع الإهلاك (مصروف)', type: 'depreciation', debit: 0, credit: 0 },
-                { id: '504', name: 'فوائد بنكية', type: 'finance_cost', debit: 0, credit: 0 },
-                { id: '505', name: 'مخصص الزكاة', type: 'tax', debit: 0, credit: 0 }
-            ]
+            "2026": JSON.parse(JSON.stringify(defaultAccountTemplate)),
+            "2025": JSON.parse(JSON.stringify(defaultAccountTemplate))
         };
 
         // Current application state configuration
@@ -622,7 +603,7 @@
             renderTable();
         }
 
-        // --- STREAMING_CHUNK: Implementing the new trial balance clear actions ---
+        // --- Implementing trial balance clear actions ---
         function openResetConfirmModal() {
             document.getElementById('reset-target-label').textContent = state.activeInputPeriod;
             openModal('reset-confirm-modal');
@@ -682,7 +663,6 @@
             if (field === 'debit' || field === 'credit') renderTable();
         }
 
-        // Avoid standard window alert blockages in nested sandboxed layouts
         window.alert = function(msg) { showAlert(msg, 'error'); };
 
         function addRow() {
@@ -749,7 +729,7 @@
             renderTable();
         }
 
-        // --- Designing P&L, Balance Sheet, and Indirect Cash Flow calculation core ---
+        // --- P&L, Balance Sheet, and Indirect Cash Flow calculation core (Updated with new IFRS logic) ---
         function calculatePeriod(dataArray) {
             let vals = {};
             for(let key in flatAccountTypes) vals[key] = 0;
@@ -757,9 +737,13 @@
             if(!dataArray) return vals;
 
             dataArray.forEach(row => {
-                if(['cash','ar','inventory','other_ca','ppe','intangible','other_nca', 'cogs', 'sg_a', 'depreciation', 'finance_cost', 'tax', 'dividends'].includes(row.type)) {
+                // Debit natural accounts
+                if(['cash','ar','inventory','prepaid_exp','other_ca',
+                    'land','ppe','rou_asset','inv_property','intangible','other_nca', 
+                    'cogs', 'sg_a', 'depreciation', 'amortization', 'finance_cost', 'tax', 'dividends'].includes(row.type)) {
                     vals[row.type] += (row.debit - row.credit);
                 } 
+                // Credit natural accounts
                 else {
                     vals[row.type] += (row.credit - row.debit);
                 }
@@ -767,29 +751,33 @@
 
             let res = { ...vals };
             
+            // P&L Logic
             res.gross_profit = res.revenue - res.cogs;
             res.ebitda = res.gross_profit + res.other_inc - res.sg_a;
-            res.ebit = res.ebitda - res.depreciation;
+            res.ebit = res.ebitda - res.depreciation - res.amortization;
             res.ebt = res.ebit - res.finance_cost;
             res.net_income = res.ebt - res.tax;
 
-            res.total_ca = res.cash + res.ar + res.inventory + res.other_ca;
-            res.total_nca = res.ppe + res.intangible + res.other_nca;
+            // Balance Sheet Logic - Assets
+            res.total_ca = res.cash + res.ar + res.inventory + res.prepaid_exp + res.other_ca;
+            res.total_nca = res.land + res.ppe + res.rou_asset + res.inv_property + res.intangible + res.other_nca;
             res.total_assets = res.total_ca + res.total_nca;
 
-            res.total_cl = res.ap + res.st_debt + res.other_cl;
-            res.total_ncl = res.lt_debt + res.other_ncl;
+            // Balance Sheet Logic - Liabilities
+            res.total_cl = res.ap + res.vat_payable + res.accrued_exp + res.st_debt + res.other_cl;
+            res.total_ncl = res.lt_debt + res.lease_liability + res.eos_provision + res.other_ncl;
             res.total_liabilities = res.total_cl + res.total_ncl;
 
+            // Balance Sheet Logic - Equity
             res.re_ending = res.retained_earnings + res.net_income - res.dividends;
-            res.total_equity = res.capital + res.re_ending;
+            res.total_equity = res.capital + res.statutory_reserve + res.general_reserve + res.re_ending;
             
             res.total_l_and_e = res.total_liabilities + res.total_equity;
 
             return res;
         }
 
-        // --- STREAMING_CHUNK: Processing Statements, Cash Flows, Ratio Calculations and UI binding ---
+        // --- Processing Statements, Cash Flows, Ratio Calculations and UI binding ---
         function generateReports() {
             state.statementsReportPeriod = document.getElementById('statements-report-year').value;
             state.statementsComparePeriod = document.getElementById('statements-compare-year').value;
@@ -828,7 +816,8 @@
                 
                 <tr><td class="py-2.5">إيرادات أخرى</td><td class="py-2.5">${fmtNum(stCurr.other_inc)}</td><td class="py-2.5 text-slate-500">${fmtNum(stPrev.other_inc)}</td></tr>
                 <tr><td class="py-2.5">مصاريف بيعية وإدارية عمومية</td><td class="py-2.5">${fmtNum(-stCurr.sg_a)}</td><td class="py-2.5 text-slate-500">${fmtNum(-stPrev.sg_a)}</td></tr>
-                <tr><td class="py-2.5">إهلاك واستهلاك</td><td class="py-2.5">${fmtNum(-stCurr.depreciation)}</td><td class="py-2.5 text-slate-500">${fmtNum(-stPrev.depreciation)}</td></tr>
+                <tr><td class="py-2.5">إهلاك الممتلكات والمعدات</td><td class="py-2.5">${fmtNum(-stCurr.depreciation)}</td><td class="py-2.5 text-slate-500">${fmtNum(-stPrev.depreciation)}</td></tr>
+                <tr><td class="py-2.5">إطفاء حق الاستخدام والبرمجيات</td><td class="py-2.5">${fmtNum(-stCurr.amortization)}</td><td class="py-2.5 text-slate-500">${fmtNum(-stPrev.amortization)}</td></tr>
                 <tr class="bg-slate-100/50 border-y border-slate-200"><td class="py-3 font-black text-slate-800">الربح التشغيلي (EBIT)</td><td class="py-3 font-bold">${fmtNum(stCurr.ebit)}</td><td class="py-3 text-slate-500 font-bold">${fmtNum(stPrev.ebit)}</td></tr>
                 
                 <tr><td class="py-2.5">تكاليف التمويل (الفوائد)</td><td class="py-2.5">${fmtNum(-stCurr.finance_cost)}</td><td class="py-2.5 text-slate-500">${fmtNum(-stPrev.finance_cost)}</td></tr>
@@ -836,19 +825,23 @@
                 <tr class="bg-emerald-50 border-b-2 border-emerald-500"><td class="py-4 font-black text-emerald-900 text-lg">صافي الربح (Net Income)</td><td class="py-4 font-black text-emerald-700 text-lg">${fmtNum(stCurr.net_income)}</td><td class="py-4 font-bold text-emerald-500">${fmtNum(stPrev.net_income)}</td></tr>
             `;
 
-            // B. Balance Sheet (Dynamic comparative headings)
+            // B. Balance Sheet (Dynamic comparative headings with new IFRS accounts)
             document.getElementById('bs-header-current').textContent = state.statementsReportPeriod;
             document.getElementById('bs-header-compare').textContent = state.statementsComparePeriod;
 
             document.getElementById('bs-body').innerHTML = `
                 <tr class="bg-slate-100"><td colspan="3" class="py-2 px-3 font-black text-slate-800 text-center">الأصول (Assets)</td></tr>
                 <tr><td colspan="3" class="py-2 font-bold text-slate-600 bg-slate-50">الأصول غير المتداولة</td></tr>
+                <tr><td class="py-2 pr-6">الأراضي</td><td class="py-2">${fmtNum(stCurr.land)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.land)}</td></tr>
                 <tr><td class="py-2 pr-6">الممتلكات والآلات والمعدات (PPE)</td><td class="py-2">${fmtNum(stCurr.ppe)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.ppe)}</td></tr>
+                <tr><td class="py-2 pr-6">أصول حق الاستخدام (ROU)</td><td class="py-2">${fmtNum(stCurr.rou_asset)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.rou_asset)}</td></tr>
+                <tr><td class="py-2 pr-6">استثمارات عقارية</td><td class="py-2">${fmtNum(stCurr.inv_property)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.inv_property)}</td></tr>
                 <tr><td class="py-2 pr-6 border-b border-slate-100">أصول غير ملموسة وأخرى</td><td class="py-2 border-b border-slate-100">${fmtNum(stCurr.intangible + stCurr.other_nca)}</td><td class="py-2 text-slate-500 border-b border-slate-100">${fmtNum(stPrev.intangible + stPrev.other_nca)}</td></tr>
                 
                 <tr><td colspan="3" class="py-2 font-bold text-slate-600 bg-slate-50 mt-2">الأصول المتداولة</td></tr>
                 <tr><td class="py-2 pr-6">المخزون</td><td class="py-2">${fmtNum(stCurr.inventory)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.inventory)}</td></tr>
                 <tr><td class="py-2 pr-6">الذمم المدينة التجارية</td><td class="py-2">${fmtNum(stCurr.ar)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.ar)}</td></tr>
+                <tr><td class="py-2 pr-6">مصاريف مدفوعة مقدماً</td><td class="py-2">${fmtNum(stCurr.prepaid_exp)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.prepaid_exp)}</td></tr>
                 <tr><td class="py-2 pr-6">النقد وما في حكمه</td><td class="py-2">${fmtNum(stCurr.cash)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.cash)}</td></tr>
                 <tr><td class="py-2 pr-6 border-b border-slate-200">أصول متداولة أخرى</td><td class="py-2 border-b border-slate-200">${fmtNum(stCurr.other_ca)}</td><td class="py-2 text-slate-500 border-b border-slate-200">${fmtNum(stPrev.other_ca)}</td></tr>
                 <tr class="bg-indigo-50 border-b-2 border-indigo-200"><td class="py-3 font-black text-indigo-900">إجمالي الأصول (Total Assets)</td><td class="py-3 font-black text-indigo-700">${fmtNum(stCurr.total_assets)}</td><td class="py-3 font-bold text-indigo-400">${fmtNum(stPrev.total_assets)}</td></tr>
@@ -856,57 +849,75 @@
                 <tr class="bg-slate-100"><td colspan="3" class="py-2 px-3 font-black text-slate-800 text-center mt-6">الالتزامات وحقوق الملكية (Equity & Liabilities)</td></tr>
                 <tr><td colspan="3" class="py-2 font-bold text-slate-600 bg-slate-50">حقوق الملكية</td></tr>
                 <tr><td class="py-2 pr-6">رأس المال</td><td class="py-2">${fmtNum(stCurr.capital)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.capital)}</td></tr>
+                <tr><td class="py-2 pr-6">احتياطي نظامي</td><td class="py-2">${fmtNum(stCurr.statutory_reserve)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.statutory_reserve)}</td></tr>
+                <tr><td class="py-2 pr-6">احتياطي عام</td><td class="py-2">${fmtNum(stCurr.general_reserve)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.general_reserve)}</td></tr>
                 <tr><td class="py-2 pr-6 border-b border-slate-100">الأرباح المبقاة</td><td class="py-2 border-b border-slate-100">${fmtNum(stCurr.re_ending)}</td><td class="py-2 text-slate-500 border-b border-slate-100">${fmtNum(stPrev.re_ending)}</td></tr>
                 
                 <tr><td colspan="3" class="py-2 font-bold text-slate-600 bg-slate-50">الالتزامات غير المتداولة</td></tr>
-                <tr><td class="py-2 pr-6 border-b border-slate-100">قروض طويلة الأجل وأخرى</td><td class="py-2 border-b border-slate-100">${fmtNum(stCurr.total_ncl)}</td><td class="py-2 text-slate-500 border-b border-slate-100">${fmtNum(stPrev.total_ncl)}</td></tr>
+                <tr><td class="py-2 pr-6">قروض طويلة الأجل</td><td class="py-2">${fmtNum(stCurr.lt_debt)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.lt_debt)}</td></tr>
+                <tr><td class="py-2 pr-6">التزامات عقود الإيجار</td><td class="py-2">${fmtNum(stCurr.lease_liability)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.lease_liability)}</td></tr>
+                <tr><td class="py-2 pr-6">مخصص مكافأة نهاية الخدمة</td><td class="py-2">${fmtNum(stCurr.eos_provision)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.eos_provision)}</td></tr>
+                <tr><td class="py-2 pr-6 border-b border-slate-100">التزامات غير متداولة أخرى</td><td class="py-2 border-b border-slate-100">${fmtNum(stCurr.other_ncl)}</td><td class="py-2 text-slate-500 border-b border-slate-100">${fmtNum(stPrev.other_ncl)}</td></tr>
                 
                 <tr><td colspan="3" class="py-2 font-bold text-slate-600 bg-slate-50">الالتزامات المتداولة</td></tr>
                 <tr><td class="py-2 pr-6">الذمم الدائنة التجارية</td><td class="py-2">${fmtNum(stCurr.ap)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.ap)}</td></tr>
                 <tr><td class="py-2 pr-6">قروض قصيرة الأجل</td><td class="py-2">${fmtNum(stCurr.st_debt)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.st_debt)}</td></tr>
+                <tr><td class="py-2 pr-6">ضريبة القيمة المضافة المستحقة</td><td class="py-2">${fmtNum(stCurr.vat_payable)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.vat_payable)}</td></tr>
+                <tr><td class="py-2 pr-6">مصاريف مستحقة</td><td class="py-2">${fmtNum(stCurr.accrued_exp)}</td><td class="py-2 text-slate-500">${fmtNum(stPrev.accrued_exp)}</td></tr>
                 <tr><td class="py-2 pr-6 border-b border-slate-200">التزامات متداولة أخرى</td><td class="py-2 border-b border-slate-200">${fmtNum(stCurr.other_cl)}</td><td class="py-2 text-slate-500 border-b border-slate-200">${fmtNum(stPrev.other_cl)}</td></tr>
                 
                 <tr class="bg-indigo-50 border-b-2 border-indigo-200"><td class="py-3 font-black text-indigo-900">إجمالي الالتزامات وحقوق الملكية</td><td class="py-3 font-black text-indigo-700">${fmtNum(stCurr.total_l_and_e)}</td><td class="py-3 font-bold text-indigo-400">${fmtNum(stPrev.total_l_and_e)}</td></tr>
             `;
 
-            // C. Cash Flow Statement (Indirect Method comparing to previous year dynamically)
+            // C. Cash Flow Statement (Indirect Method integrated with new IFRS accounts)
             document.getElementById('cf-header-current').textContent = state.cfReportPeriod;
 
             let deltaAR = cfPrev.ar - cfCurr.ar; 
             let deltaInv = cfPrev.inventory - cfCurr.inventory;
+            let deltaPrepaid = cfPrev.prepaid_exp - cfCurr.prepaid_exp;
             let deltaOtherCA = cfPrev.other_ca - cfCurr.other_ca;
-            let deltaAP = cfCurr.ap - cfPrev.ap; 
-            let deltaOtherCL = cfCurr.other_cl - cfPrev.other_cl;
             
-            let OCF = cfCurr.net_income + cfCurr.depreciation + deltaAR + deltaInv + deltaOtherCA + deltaAP + deltaOtherCL;
+            let deltaAP = cfCurr.ap - cfPrev.ap; 
+            let deltaVAT = cfCurr.vat_payable - cfPrev.vat_payable;
+            let deltaAccrued = cfCurr.accrued_exp - cfPrev.accrued_exp;
+            let deltaOtherCL = cfCurr.other_cl - cfPrev.other_cl;
+            let deltaEOS = cfCurr.eos_provision - cfPrev.eos_provision;
+            
+            let OCF = cfCurr.net_income + cfCurr.depreciation + cfCurr.amortization + 
+                      deltaAR + deltaInv + deltaPrepaid + deltaOtherCA + 
+                      deltaAP + deltaVAT + deltaAccrued + deltaOtherCL + deltaEOS;
             
             let capEx = (cfCurr.ppe - cfPrev.ppe) + cfCurr.depreciation; 
-            let deltaIntangibles = cfCurr.intangible - cfPrev.intangible;
-            let ICF = -(capEx + deltaIntangibles);
+            let deltaLand = cfCurr.land - cfPrev.land;
+            let deltaInvProp = cfCurr.inv_property - cfPrev.inv_property;
+            let deltaIntangibles = (cfCurr.intangible - cfPrev.intangible) + cfCurr.amortization;
+            let ICF = -(capEx + deltaLand + deltaInvProp + deltaIntangibles);
             
             let deltaDebt = (cfCurr.st_debt - cfPrev.st_debt) + (cfCurr.lt_debt - cfPrev.lt_debt);
-            let deltaCap = cfCurr.capital - cfPrev.capital;
-            let FCF = deltaDebt + deltaCap - cfCurr.dividends;
+            let deltaLease = cfCurr.lease_liability - cfPrev.lease_liability;
+            let deltaCap = cfCurr.capital - cfPrev.capital; // Assumes reserves come from RE not external
+            let FCF = deltaDebt + deltaLease + deltaCap - cfCurr.dividends;
             
             let netCF = OCF + ICF + FCF;
 
             document.getElementById('cf-body').innerHTML = `
                 <tr><td colspan="2" class="py-2 font-black text-slate-800 bg-slate-100">التدفقات النقدية من الأنشطة التشغيلية</td></tr>
                 <tr><td class="py-2 pr-6">صافي الربح قبل الضريبة والزكاة</td><td class="py-2">${fmtNum(cfCurr.net_income)}</td></tr>
-                <tr><td class="py-2 pr-6 text-slate-600">تعديل: إهلاك واستهلاك غير نقدي</td><td class="py-2">${fmtNum(cfCurr.depreciation)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600">تعديل: إهلاك واستهلاك غير نقدي</td><td class="py-2">${fmtNum(cfCurr.depreciation + cfCurr.amortization)}</td></tr>
                 <tr><td class="py-2 pr-6 text-slate-600">التغير في الذمم المدينة</td><td class="py-2">${fmtNum(deltaAR)}</td></tr>
-                <tr><td class="py-2 pr-6 text-slate-600">التغير في المخزون</td><td class="py-2">${fmtNum(deltaInv)}</td></tr>
-                <tr><td class="py-2 pr-6 text-slate-600">التغير في الذمم الدائنة</td><td class="py-2">${fmtNum(deltaAP)}</td></tr>
-                <tr><td class="py-2 pr-6 text-slate-600 border-b border-slate-200">التغير في رأس المال العامل الآخر</td><td class="py-2 border-b border-slate-200">${fmtNum(deltaOtherCA + deltaOtherCL)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600">التغير في المخزون والمصاريف المدفوعة مقدماً</td><td class="py-2">${fmtNum(deltaInv + deltaPrepaid)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600">التغير في الذمم الدائنة والمستحقات والضريبة</td><td class="py-2">${fmtNum(deltaAP + deltaAccrued + deltaVAT)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600 border-b border-slate-200">التغير في مخصص نهاية الخدمة وغيرها</td><td class="py-2 border-b border-slate-200">${fmtNum(deltaEOS + deltaOtherCA + deltaOtherCL)}</td></tr>
                 <tr class="bg-slate-50"><td class="py-3 font-bold text-slate-900 pr-4">صافي النقد من الأنشطة التشغيلية (OCF)</td><td class="py-3 font-black text-emerald-600">${fmtNum(OCF)}</td></tr>
                 
                 <tr><td colspan="2" class="py-2 font-black text-slate-800 bg-slate-100 mt-4">التدفقات النقدية من الأنشطة الاستثمارية</td></tr>
-                <tr><td class="py-2 pr-6 text-slate-600">الإنفاق الرأسمالي - شراء ممتلكات وآلات (CapEx)</td><td class="py-2">${fmtNum(-capEx)}</td></tr>
-                <tr><td class="py-2 pr-6 text-slate-600 border-b border-slate-200">التغير في أصول غير ملموسة وأخرى</td><td class="py-2 border-b border-slate-200">${fmtNum(-deltaIntangibles)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600">الإنفاق الرأسمالي - ممتلكات وآلات (CapEx)</td><td class="py-2">${fmtNum(-capEx)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600 border-b border-slate-200">التغير في الأراضي والاستثمارات والأصول الأخرى</td><td class="py-2 border-b border-slate-200">${fmtNum(-(deltaLand + deltaInvProp + deltaIntangibles))}</td></tr>
                 <tr class="bg-slate-50"><td class="py-3 font-bold text-slate-900 pr-4">صافي النقد من الأنشطة الاستثمارية (ICF)</td><td class="py-3 font-black text-blue-600">${fmtNum(ICF)}</td></tr>
                 
                 <tr><td colspan="2" class="py-2 font-black text-slate-800 bg-slate-100 mt-4">التدفقات النقدية من الأنشطة التمويلية</td></tr>
-                <tr><td class="py-2 pr-6 text-slate-600">صافي التغير في القروض والتسيهلات</td><td class="py-2">${fmtNum(deltaDebt)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600">صافي التغير في القروض وتسهيلات بنكية</td><td class="py-2">${fmtNum(deltaDebt)}</td></tr>
+                <tr><td class="py-2 pr-6 text-slate-600">صافي التغير في التزامات عقود الإيجار (Lease)</td><td class="py-2">${fmtNum(deltaLease)}</td></tr>
                 <tr><td class="py-2 pr-6 text-slate-600">توزيعات أرباح مدفوعة للمساهمين</td><td class="py-2">${fmtNum(-cfCurr.dividends)}</td></tr>
                 <tr><td class="py-2 pr-6 text-slate-600 border-b border-slate-200">التغير في رأس المال</td><td class="py-2 border-b border-slate-200">${fmtNum(deltaCap)}</td></tr>
                 <tr class="bg-slate-50"><td class="py-3 font-bold text-slate-900 pr-4">صافي النقد من الأنشطة التمويلية (FCF)</td><td class="py-3 font-black text-indigo-600">${fmtNum(FCF)}</td></tr>
@@ -943,8 +954,8 @@
             let roeCurr = anCurr.total_equity > 0 ? ((anCurr.net_income / anCurr.total_equity) * 100).toFixed(1) : 0;
             let roePrev = anPrev.total_equity > 0 ? ((anPrev.net_income / anPrev.total_equity) * 100).toFixed(1) : 0;
             
-            let deCurr = anCurr.total_equity > 0 ? ((anCurr.st_debt + anCurr.lt_debt) / anCurr.total_equity).toFixed(2) : 0;
-            let dePrev = anPrev.total_equity > 0 ? ((anPrev.st_debt + anPrev.lt_debt) / anPrev.total_equity).toFixed(2) : 0;
+            let deCurr = anCurr.total_equity > 0 ? ((anCurr.st_debt + anCurr.lt_debt + anCurr.lease_liability) / anCurr.total_equity).toFixed(2) : 0;
+            let dePrev = anPrev.total_equity > 0 ? ((anPrev.st_debt + anPrev.lt_debt + anPrev.lease_liability) / anPrev.total_equity).toFixed(2) : 0;
 
             let icCurr = anCurr.finance_cost > 0 ? (anCurr.ebit / anCurr.finance_cost).toFixed(1) : 'N/A';
             let icPrev = anPrev.finance_cost > 0 ? (anPrev.ebit / anPrev.finance_cost).toFixed(1) : 'N/A';
@@ -986,10 +997,14 @@
 
             let dbDeltaAR = dbPrev.ar - dbCurr.ar;
             let dbDeltaInv = dbPrev.inventory - dbCurr.inventory;
+            let dbDeltaPrepaid = dbPrev.prepaid_exp - dbCurr.prepaid_exp;
             let dbDeltaOtherCA = dbPrev.other_ca - dbCurr.other_ca;
             let dbDeltaAP = dbCurr.ap - dbPrev.ap;
+            let dbDeltaVAT = dbCurr.vat_payable - dbPrev.vat_payable;
+            let dbDeltaAccrued = dbCurr.accrued_exp - dbPrev.accrued_exp;
             let dbDeltaOtherCL = dbCurr.other_cl - dbPrev.other_cl;
-            let dbOCF = dbCurr.net_income + dbCurr.depreciation + dbDeltaAR + dbDeltaInv + dbDeltaOtherCA + dbDeltaAP + dbDeltaOtherCL;
+            let dbDeltaEOS = dbCurr.eos_provision - dbPrev.eos_provision;
+            let dbOCF = dbCurr.net_income + dbCurr.depreciation + dbCurr.amortization + dbDeltaAR + dbDeltaInv + dbDeltaPrepaid + dbDeltaOtherCA + dbDeltaAP + dbDeltaVAT + dbDeltaAccrued + dbDeltaOtherCL + dbDeltaEOS;
 
             document.getElementById('kpi-container').innerHTML = `
                 <div class="bg-gradient-to-br from-blue-700 to-indigo-800 text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
@@ -1055,8 +1070,8 @@
             charts['assetsChart'] = new Chart(document.getElementById('assetsChart').getContext('2d'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['النقدية', 'العملاء', 'المخزون', 'أصول ثابتة (PPE)'],
-                    datasets: [{ data: [dbCurr.cash, dbCurr.ar, dbCurr.inventory, dbCurr.ppe], backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#6366f1'], borderWidth: 0 }]
+                    labels: ['النقدية', 'العملاء', 'المخزون', 'أصول ثابتة وحق الاستخدام'],
+                    datasets: [{ data: [dbCurr.cash, dbCurr.ar, dbCurr.inventory, dbCurr.ppe + dbCurr.rou_asset], backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#6366f1'], borderWidth: 0 }]
                 },
                 options: { responsive: true, cutout: '65%' }
             });
@@ -1065,8 +1080,8 @@
             charts['liabChart'] = new Chart(document.getElementById('liabilitiesChart').getContext('2d'), {
                 type: 'pie',
                 data: {
-                    labels: ['موردون (AP)', 'قروض قصيرة', 'قروض طويلة', 'حقوق الملكية'],
-                    datasets: [{ data: [dbCurr.ap, dbCurr.st_debt, dbCurr.lt_debt, dbCurr.total_equity], backgroundColor: ['#ef4444', '#f97316', '#8b5cf6', '#0ea5e9'], borderWidth: 0 }]
+                    labels: ['الموردون والمستحقات', 'قروض قصيرة', 'قروض طويلة والتزامات إيجار', 'حقوق الملكية'],
+                    datasets: [{ data: [dbCurr.ap + dbCurr.accrued_exp + dbCurr.vat_payable, dbCurr.st_debt, dbCurr.lt_debt + dbCurr.lease_liability, dbCurr.total_equity], backgroundColor: ['#ef4444', '#f97316', '#8b5cf6', '#0ea5e9'], borderWidth: 0 }]
                 },
                 options: { responsive: true }
             });

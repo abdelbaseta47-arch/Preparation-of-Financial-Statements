@@ -480,6 +480,69 @@
         // Charts configuration state
         let charts = {};
 
+        // --- IndexedDB Local Storage System for Persistence ---
+        const IDB_NAME = 'FinancialSystemDB';
+        const STORE_NAME = 'app_state';
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(IDB_NAME, 1);
+                request.onupgradeneeded = (e) => {
+                    const dbInstance = e.target.result;
+                    if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
+                        dbInstance.createObjectStore(STORE_NAME);
+                    }
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function saveDataLocally() {
+            try {
+                const dbInstance = await initDB();
+                const tx = dbInstance.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                store.put(JSON.stringify(db), 'financial_db');
+                store.put(JSON.stringify(state), 'app_state');
+            } catch(e) {
+                console.error('Storage error', e);
+            }
+        }
+
+        async function loadDataLocally() {
+            return new Promise(async (resolve) => {
+                try {
+                    const dbInstance = await initDB();
+                    const tx = dbInstance.transaction(STORE_NAME, 'readonly');
+                    const store = tx.objectStore(STORE_NAME);
+                    
+                    const dbReq = store.get('financial_db');
+                    dbReq.onsuccess = () => {
+                        if (dbReq.result) {
+                            const savedDb = JSON.parse(dbReq.result);
+                            for(let k in db) delete db[k]; 
+                            Object.keys(savedDb).forEach(k => db[k] = savedDb[k]);
+                        }
+                        
+                        const stateReq = store.get('app_state');
+                        stateReq.onsuccess = () => {
+                            if (stateReq.result) {
+                                const savedState = JSON.parse(stateReq.result);
+                                Object.keys(savedState).forEach(k => state[k] = savedState[k]);
+                            }
+                            resolve(true);
+                        };
+                        stateReq.onerror = () => resolve(true);
+                    };
+                    dbReq.onerror = () => resolve(false);
+                } catch(e) {
+                    console.error('Load error', e);
+                    resolve(false);
+                }
+            });
+        }
+
         // --- Formatting utilities and UI helpers ---
         const fmtNum = (num) => {
             if (num < 0) return `<span class="negative-val">(${new Intl.NumberFormat('en-US').format(Math.abs(num))})</span>`;
@@ -573,6 +636,7 @@
         function changeActivePeriod() {
             state.activeInputPeriod = document.getElementById('period-selector').value;
             document.getElementById('active-tb-label').textContent = state.activeInputPeriod;
+            saveDataLocally();
             renderTable();
         }
 
@@ -596,6 +660,8 @@
             db[val] = JSON.parse(JSON.stringify(defaultAccountTemplate));
             state.activeInputPeriod = val;
             
+            saveDataLocally();
+            
             closeModal('add-year-modal');
             showAlert(`تم إضافة وتفعيل السنة المالية (${val}) بنجاح!`, 'success');
             
@@ -616,6 +682,9 @@
                     row.debit = 0;
                     row.credit = 0;
                 });
+                
+                saveDataLocally();
+
                 closeModal('reset-confirm-modal');
                 showAlert(`تم تصفير كافة أرصدة ميزان المراجعة للسنة (${target}) بنجاح!`, 'success');
                 renderTable();
@@ -660,6 +729,7 @@
         function updateRow(index, field, value) {
             if (field === 'debit' || field === 'credit') value = parseNum(value);
             db[state.activeInputPeriod][index][field] = value;
+            saveDataLocally();
             if (field === 'debit' || field === 'credit') renderTable();
         }
 
@@ -667,11 +737,13 @@
 
         function addRow() {
             db[state.activeInputPeriod].push({ id: '', name: '', type: 'sg_a', debit: 0, credit: 0 });
+            saveDataLocally();
             renderTable();
         }
 
         function deleteRow(index) {
             db[state.activeInputPeriod].splice(index, 1);
+            saveDataLocally();
             renderTable();
         }
 
@@ -721,6 +793,8 @@
             for(let key in state) {
                 if(state[key] === oldVal) state[key] = newVal;
             }
+
+            saveDataLocally();
 
             closeModal('rename-year-modal');
             showAlert(`تم إعادة تسمية الفترة بنجاح إلى (${newVal})`, 'success');
@@ -786,6 +860,8 @@
             state.analysisComparePeriod = document.getElementById('analysis-compare-year').value;
             state.dashboardReportPeriod = document.getElementById('dashboard-report-year').value;
             state.dashboardComparePeriod = document.getElementById('dashboard-compare-year').value;
+
+            saveDataLocally();
 
             let totalDebit = 0, totalCredit = 0;
             const currentRows = db[state.activeInputPeriod] || [];
@@ -1089,7 +1165,9 @@
             showAlert('تم تحديث ومعالجة كافة التقارير والرسوم البيانية بنجاح!', 'success');
         }
 
-        window.onload = () => {
+        window.onload = async () => {
+            await loadDataLocally();
+
             populateAllYearDropdowns();
             renderTable();
             
